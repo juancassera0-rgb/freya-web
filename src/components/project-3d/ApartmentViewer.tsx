@@ -2,8 +2,10 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { ACESFilmicToneMapping } from "three";
 import type { ProjectUnit } from "@/data/project3d";
 import { ApartmentDollhouse } from "./ApartmentDollhouse";
+import { ApartmentPlanSVG } from "./ApartmentPlanSVG";
 import styles from "./ApartmentViewer.module.css";
 
 const Canvas = dynamic(
@@ -63,34 +65,30 @@ export function ApartmentViewer({
         </div>
       </div>
 
-      <div className={styles.stage} data-mode={mode}>
+      <div className={styles.stage} data-mode={mode} key={mode}>
         {mode === "plan" ? (
-          <div className={styles.plan} aria-label="Plano esquemático">
-            <div className={styles.planGrid}>
-              <span className={styles.room} data-span="2">
-                Living / comedor
-              </span>
-              <span className={styles.room}>Cocina</span>
-              <span className={styles.room}>Dorm. 1</span>
-              <span className={styles.room}>Dorm. 2</span>
-              <span className={styles.room}>Dorm. 3</span>
-              <span className={styles.room} data-span="2">
-                Balcón / parrilla
-              </span>
-            </div>
-            <p className={styles.planHint}>
-              Plano esquemático de interfaz — reemplazar por plano oficial.
-            </p>
-          </div>
+          <ApartmentPlanSVG unit={unit} />
         ) : (
           <Canvas
-            dpr={[1, 1.25]}
+            dpr={[1, 1.5]}
             camera={{ position: [2.4, 2.2, 2.8], fov: 40 }}
             gl={{ antialias: true, powerPreference: "high-performance" }}
+            shadows
+            onCreated={({ gl }) => {
+              gl.toneMapping = ACESFilmicToneMapping;
+              gl.toneMappingExposure = 1.05;
+            }}
           >
             <color attach="background" args={["#f0eee8"]} />
-            <ambientLight intensity={0.8} />
-            <directionalLight position={[3, 5, 2]} intensity={0.9} />
+            <ambientLight intensity={0.55} />
+            <directionalLight
+              position={[3, 5, 2]}
+              intensity={1.15}
+              color="#fff8ee"
+              castShadow
+              shadow-mapSize={[512, 512]}
+            />
+            <directionalLight position={[-2, 1.5, -2]} intensity={0.3} color="#c4b79a" />
             <ApartmentDollhouse unit={unit} />
           </Canvas>
         )}

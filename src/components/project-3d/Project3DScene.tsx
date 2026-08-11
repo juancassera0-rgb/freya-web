@@ -1,6 +1,8 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
+import { ContactShadows } from "@react-three/drei";
+import { ACESFilmicToneMapping } from "three";
 import { Suspense, type ReactNode } from "react";
 import { CameraRig } from "./CameraRig";
 import { OrbitControlsSoft } from "./OrbitControlsSoft";
@@ -55,30 +57,58 @@ export function Project3DScene({
         near: 0.1,
         far: 60,
       }}
-      shadows={!lite}
+      shadows={!lite ? "soft" : false}
+      onCreated={({ gl }) => {
+        gl.toneMapping = ACESFilmicToneMapping;
+        gl.toneMappingExposure = isHero ? 1.08 : 1.15;
+      }}
       style={{ width: "100%", height: "100%", display: "block" }}
     >
       <color attach="background" args={[bg]} />
       <fog attach="fog" args={[bg, isHero ? 10 : 12, isHero ? 22 : 28]} />
 
-      <ambientLight intensity={isHero ? 0.45 : 0.72} />
+      {/* Luz clave — sol bajo, arquitectónico */}
       <directionalLight
         castShadow={!lite}
-        position={[6, 10, 4]}
-        intensity={isHero ? 0.95 : 1.05}
-        color="#f6f6f6"
-        shadow-mapSize={lite ? [512, 512] : [1024, 1024]}
-      />
+        position={[6, 9, 4]}
+        intensity={isHero ? 1.5 : 1.7}
+        color="#fff6e8"
+        shadow-mapSize={lite ? [512, 512] : [1536, 1536]}
+        shadow-bias={-0.0015}
+      >
+        <orthographicCamera attach="shadow-camera" args={[-6, 6, 6, -6, 0.5, 22]} />
+      </directionalLight>
+      {/* Luz de relleno fría — abre sombras sin aplanar */}
       <directionalLight
-        position={[-4, 3, -2]}
-        intensity={isHero ? 0.35 : 0.25}
-        color="#c4b79a"
+        position={[-5, 4, -3]}
+        intensity={isHero ? 0.28 : 0.22}
+        color="#aab6c4"
       />
+      {/* Rim light sutil — separa el volumen del fondo */}
+      <directionalLight
+        position={[-2, 2.5, 5]}
+        intensity={isHero ? 0.3 : 0.18}
+        color="#e8dcc4"
+      />
+      <ambientLight intensity={isHero ? 0.22 : 0.32} color="#e4ded0" />
+      <hemisphereLight args={["#f4f1e8", ground, isHero ? 0.35 : 0.45]} />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[24, 24]} />
         <meshStandardMaterial color={ground} roughness={1} />
       </mesh>
+
+      {!lite && (
+        <ContactShadows
+          position={[0, 0.005, 0]}
+          opacity={isHero ? 0.38 : 0.3}
+          scale={14}
+          blur={2.6}
+          far={4.5}
+          resolution={512}
+          color="#1d1c1b"
+        />
+      )}
 
       {!lite && (
         <gridHelper

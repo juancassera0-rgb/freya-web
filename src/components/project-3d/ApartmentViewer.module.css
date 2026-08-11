@@ -54,47 +54,28 @@
   min-height: 200px;
   background: #f0eee8;
   border: 1px solid var(--line);
+  animation: stageFade var(--dur-med) var(--ease-out);
 }
 
 .stage[data-mode="3d"] {
   min-height: 220px;
 }
 
-.plan {
-  padding: 0.85rem;
-  display: grid;
-  gap: 0.65rem;
+@keyframes stageFade {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.planGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.4rem;
-  min-height: 160px;
-}
-
-.room {
-  display: grid;
-  place-items: center;
-  padding: 0.55rem;
-  border: 1px dashed color-mix(in srgb, var(--camo) 40%, transparent);
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  text-align: center;
-}
-
-.room[data-span="2"] {
-  grid-column: span 2;
-}
-
-.planHint {
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-  line-height: 1.4;
+@media (prefers-reduced-motion: reduce) {
+  .stage {
+    animation: none;
+  }
 }
 
 .facts {

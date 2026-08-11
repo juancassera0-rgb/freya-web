@@ -1,0 +1,99 @@
+.root {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  background: var(--surface);
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  max-height: 15rem;
+}
+
+.envelope {
+  fill: color-mix(in srgb, var(--off-white) 60%, var(--surface));
+  stroke: var(--ink-soft);
+  stroke-width: 2.5;
+}
+
+.wall {
+  stroke: var(--ink-soft);
+  stroke-width: 2;
+}
+
+.wallLight {
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 3;
+}
+
+.balcony {
+  fill: color-mix(in srgb, var(--accent-soft) 70%, transparent);
+  stroke: var(--ink-soft);
+  stroke-width: 2;
+}
+
+.balconyLabel {
+  font-size: 6px;
+  letter-spacing: 0.08em;
+  fill: var(--muted);
+  text-anchor: middle;
+}
+
+.door {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  opacity: 0.8;
+}
+
+.window {
+  stroke: var(--camo);
+  stroke-width: 4;
+  opacity: 0.55;
+}
+
+.roomLabel {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  fill: var(--ink-soft);
+  text-anchor: middle;
+  font-family: var(--font-body);
+}
+
+.north {
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  fill: none;
+}
+
+.north text {
+  font-size: 8px;
+  fill: var(--muted);
+  stroke: none;
+  text-anchor: middle;
+  font-weight: 600;
+}
+
+.dimLine {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.dimLabel {
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  fill: var(--muted);
+  text-anchor: middle;
+  text-transform: uppercase;
+}
+
+.hint {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0;
+}
