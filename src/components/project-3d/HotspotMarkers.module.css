@@ -1,0 +1,41 @@
+.hotspot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--camo) 55%, transparent);
+  background: color-mix(in srgb, var(--off-white) 92%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transform: translate3d(0, 0, 0);
+  transition:
+    background var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.hotspot:hover,
+.hotspot[data-active="true"] {
+  background: var(--accent-soft);
+  border-color: var(--camo);
+  transform: translate3d(0, -2px, 0);
+}
+
+.dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border: 1px solid var(--camo);
+  background: transparent;
+}
+
+.hotspot[data-active="true"] .dot {
+  background: var(--camo);
+}
+
+.label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}

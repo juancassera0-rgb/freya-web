@@ -13,7 +13,17 @@ type Props = {
 export function AdvisorForm({ defaultProject }: Props) {
   const params = useSearchParams();
   const fromQuery = params.get("proyecto") ?? "";
+  const unitQuery = params.get("unidad") ?? "";
+  const floorQuery = params.get("piso") ?? "";
   const initialProject = defaultProject || fromQuery;
+
+  const contextNote = useMemo(() => {
+    const parts: string[] = [];
+    if (unitQuery) parts.push(`unidad ${unitQuery}`);
+    if (floorQuery) parts.push(`piso ${floorQuery}`);
+    if (!parts.length) return "";
+    return `Consulta desde explorador 3D: ${parts.join(", ")}.`;
+  }, [unitQuery, floorQuery]);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -21,7 +31,7 @@ export function AdvisorForm({ defaultProject }: Props) {
   const [interest, setInterest] = useState("vivir");
   const [channel, setChannel] = useState("whatsapp");
   const [slot, setSlot] = useState("manana");
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(contextNote);
   const [sent, setSent] = useState(false);
 
   const options = useMemo(() => getActiveProjects(), []);
@@ -44,6 +54,8 @@ export function AdvisorForm({ defaultProject }: Props) {
       `Soy ${name || "un interesado"}.`,
       `Teléfono/WhatsApp: ${phone || "a coordinar"}.`,
       `Proyecto: ${projectLabel}.`,
+      unitQuery ? `Unidad de interés: ${unitQuery}.` : "",
+      floorQuery ? `Piso: ${floorQuery}.` : "",
       `Objetivo: ${interest === "vivir" ? "comprar para vivir" : "inversión"}.`,
       `Prefiero: ${channelLabel}.`,
       `Franja: ${slotLabel}.`,
@@ -62,6 +74,14 @@ export function AdvisorForm({ defaultProject }: Props) {
         Coordinamos una conversación comercial: tipologías, disponibilidad,
         precios orientativos y próximos pasos.
       </p>
+
+      {(unitQuery || floorQuery) && (
+        <p className={styles.ok} role="status">
+          Contexto del explorador
+          {unitQuery ? `: unidad ${unitQuery}` : ""}
+          {floorQuery ? `${unitQuery ? " ·" : ":"} piso ${floorQuery}` : ""}.
+        </p>
+      )}
 
       <div className={styles.row}>
         <label className={styles.field}>

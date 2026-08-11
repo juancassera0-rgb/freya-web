@@ -7,7 +7,10 @@ import { ProjectFacts } from "@/components/ProjectFacts";
 import { ProjectGallery } from "@/components/ProjectGallery";
 import { ContactForm } from "@/components/ContactForm";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { BuildingExplorer } from "@/components/project-3d/BuildingExplorer";
+import { ProjectStory3D } from "@/components/project-3d/ProjectStory3D";
 import { getProject, projects } from "@/data/projects";
+import { getProject3D } from "@/data/project3d";
 import { whatsappUrl } from "@/data/site";
 import styles from "./page.module.css";
 
@@ -34,6 +37,7 @@ export default async function ProjectPage({ params }: Props) {
 
   const isActive = project.status === "en-comercializacion";
   const statusLabel = isActive ? "En comercialización" : "Finalizado";
+  const project3d = getProject3D(project.slug);
 
   return (
     <>
@@ -92,6 +96,13 @@ export default async function ProjectPage({ params }: Props) {
           </ScrollReveal>
         </div>
       </section>
+
+      {project3d ? (
+        <>
+          <ProjectStory3D project={project} config={project3d} />
+          <BuildingExplorer config={project3d} projectName={project.name} />
+        </>
+      ) : null}
 
       <section className="section">
         <div className="container">

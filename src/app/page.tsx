@@ -4,92 +4,31 @@ import { FaqList } from "@/components/FaqList";
 import { ContactForm } from "@/components/ContactForm";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { TextReveal } from "@/components/TextReveal";
-import { LineReveal } from "@/components/LineReveal";
 import { MethodPinned } from "@/components/MethodPinned";
 import { ProjectRail } from "@/components/ProjectRail";
-import { ParallaxMedia } from "@/components/ParallaxMedia";
-import { FreyaLogo } from "@/components/FreyaLogo";
+import { ProjectHero3D } from "@/components/project-3d/ProjectHero3D";
 import { differentials } from "@/data/differentials";
 import {
   getActiveProjects,
   getFinishedProjects,
+  getProject,
 } from "@/data/projects";
+import { getProject3D, HERO_PROJECT_SLUG } from "@/data/project3d";
 import { site } from "@/data/site";
 import { StatsCounters } from "@/components/AnimatedCounter";
-import { HeroVideo } from "@/components/HeroVideo";
 import styles from "./home.module.css";
 
 export default function HomePage() {
   const active = getActiveProjects();
   const finished = getFinishedProjects();
+  const heroProject = getProject(HERO_PROJECT_SLUG);
+  const hero3d = getProject3D(HERO_PROJECT_SLUG);
 
   return (
     <>
-      <section className={styles.hero}>
-        <div className={styles.heroMedia}>
-          <ParallaxMedia strength={22}>
-            <HeroVideo
-              className={styles.heroVideo}
-              overlayClassName={styles.heroOverlay}
-            />
-          </ParallaxMedia>
-        </div>
-        <div className={styles.heroGrain} aria-hidden />
-        <div className={styles.heroGrid} aria-hidden>
-          <span /><span /><span /><span />
-        </div>
-        <div className={`container ${styles.heroContent}`}>
-          <div className={styles.heroTop}>
-            <LineReveal as="div" className={styles.heroBrand} immediate delay={180}>
-              <FreyaLogo variant="hero" priority />
-            </LineReveal>
-            <LineReveal as="p" className={styles.heroEyebrow} immediate delay={320}>
-              Imagined for personalization
-            </LineReveal>
-          </div>
-
-          <div className={styles.heroMain}>
-            <h1 className={styles.heroTitle}>
-              <LineReveal as="span" className={styles.heroLine} immediate delay={420}>
-                Desde Pinamar
-              </LineReveal>
-              <LineReveal as="span" className={styles.heroLine} immediate delay={520}>
-                a Buenos Aires
-              </LineReveal>
-            </h1>
-
-            <div className={styles.heroSide}>
-              <LineReveal as="p" className={styles.heroLead} immediate delay={640}>
-                Desarrollamos edificios que perduran en el tiempo, equilibrando
-                valor, confianza y estética. Obra propia, tipologías claras y
-                unidades que se adaptan a quien las habita.
-              </LineReveal>
-              <LineReveal as="div" className={styles.heroActions} immediate delay={760}>
-                <Link className={styles.heroPrimary} href="/desarrollos">
-                  <span className={styles.heroPrimarySq} aria-hidden />
-                  Ver desarrollos
-                  <span aria-hidden>→</span>
-                </Link>
-                <Link className={styles.heroTextLink} href="/asesor">
-                  Hablar con un asesor
-                </Link>
-              </LineReveal>
-            </div>
-          </div>
-
-          <LineReveal as="div" className={styles.zonesLine} immediate delay={900}>
-            <span className={styles.zonesLabel}>Zonas</span>
-            <nav className={styles.zonesNav} aria-label="Zonas Freya">
-              {site.zones.map((z, i) => (
-                <span key={z} className={styles.zoneItem}>
-                  {i > 0 && <span className={styles.zoneSep} aria-hidden />}
-                  <Link href="/desarrollos">{z}</Link>
-                </span>
-              ))}
-            </nav>
-          </LineReveal>
-        </div>
-      </section>
+      {heroProject && hero3d ? (
+        <ProjectHero3D project={heroProject} config={hero3d} />
+      ) : null}
 
       <section className={styles.marquee} aria-hidden>
         <div className={styles.marqueeTrack}>
