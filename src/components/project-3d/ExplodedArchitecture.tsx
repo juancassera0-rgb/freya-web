@@ -8,6 +8,7 @@ import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { usePerfFlags } from "./useClientFlags";
+import { useCanvasActive } from "./useCanvasActive";
 import styles from "./ExplodedArchitecture.module.css";
 
 const Project3DScene = dynamic(
@@ -40,6 +41,7 @@ export function ExplodedArchitecture({ project, config }: Props) {
   const { reducedMotion, lite, webglOk } = usePerfFlags();
   const enabled = !reducedMotion && webglOk;
   const { progress } = useScrollProgress(sectionRef, { enabled, steps: 80 });
+  const { mounted, active } = useCanvasActive(sectionRef, { rootMargin: "0px" });
 
   const chapters: Chapter[] = [
     {
@@ -84,7 +86,7 @@ export function ExplodedArchitecture({ project, config }: Props) {
     >
       <div className={styles.sticky}>
         <div className={styles.stage}>
-          {enabled ? (
+          {enabled && mounted ? (
             <Project3DScene
               config={config}
               variant="studio"
@@ -92,6 +94,7 @@ export function ExplodedArchitecture({ project, config }: Props) {
               cameraProgress={progress}
               performanceMode={lite ? "lite" : "full"}
               enablePointerParallax={false}
+              active={active}
             >
               <ArchitecturalMassing
                 config={config}

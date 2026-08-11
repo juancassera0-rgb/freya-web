@@ -7,6 +7,7 @@ import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { usePerfFlags } from "./useClientFlags";
+import { useCanvasActive } from "./useCanvasActive";
 import styles from "./ProjectStory3D.module.css";
 
 const Project3DScene = dynamic(
@@ -30,6 +31,7 @@ export function ProjectStory3D({ project, config }: Props) {
   const [progress, setProgress] = useState(0);
   const [activeId, setActiveId] = useState(config.story[0]?.id ?? "");
   const [highlightFloor, setHighlightFloor] = useState<number | null>(null);
+  const { mounted, active } = useCanvasActive(rootRef, { rootMargin: "0px" });
 
   useEffect(() => {
     const el = rootRef.current;
@@ -64,13 +66,14 @@ export function ProjectStory3D({ project, config }: Props) {
     >
       <div className={styles.sticky}>
         <div className={styles.stage}>
-          {enabled ? (
+          {enabled && mounted ? (
             <Project3DScene
               config={config}
               variant="studio"
               cameraProgress={progress}
               enablePointerParallax={!lite}
               performanceMode={lite ? "lite" : "full"}
+              active={active}
             >
               <ArchitecturalMassing
                 config={config}

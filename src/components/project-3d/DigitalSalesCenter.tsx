@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   buildUnitPlan,
   roomsWithRenders,
@@ -19,6 +19,7 @@ import { HotspotMarkers } from "./HotspotMarkers";
 import { PlanSVG } from "./PlanSVG";
 import { RenderViewer } from "./RenderViewer";
 import { usePerfFlags } from "./useClientFlags";
+import { useCanvasActive } from "./useCanvasActive";
 import type { SalesStage } from "./SalesCenterScene";
 import styles from "./DigitalSalesCenter.module.css";
 
@@ -50,7 +51,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
   const rootRef = useRef<HTMLElement>(null);
   const { reducedMotion, lite, webglOk } = usePerfFlags();
 
-  const [mounted, setMounted] = useState(false);
+  const { mounted, active } = useCanvasActive(rootRef);
   const [stage, setStage] = useState<SalesStage>("building");
   const [hoveredFloor, setHoveredFloor] = useState<number | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
@@ -58,48 +59,17 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
   const [morph, setMorph] = useState(0.35);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [viewerRoom, setViewerRoom] = useState<PlanRoom | null>(null);
-  const [extract, setExtract] = useState(0);
+  /** Se activa si el contexto WebGL se pierde sin recuperarse */
+  const [contextLost, setContextLost] = useState(false);
 
-  const canRender3D = webglOk && !reducedMotion;
+  const canRender3D = webglOk && !reducedMotion && !contextLost;
 
-  // Monta el canvas sólo al entrar en viewport
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e?.isIntersecting) {
-          setMounted(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: "150px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  // Anima la extracción de la losa al entrar en la etapa de piso.
-  // En "building" el valor efectivo es 0 por derivación, sin setState.
-  useEffect(() => {
-    if (stage === "building") return;
-
-    let raf = 0;
-    const start = performance.now();
-    const duration = reducedMotion ? 0 : 900;
-
-    const tick = (now: number) => {
-      const t = duration === 0 ? 1 : Math.min(1, (now - start) / duration);
-      setExtract(1 - Math.pow(1 - t, 3));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [stage, selectedFloor, reducedMotion]);
-
-  /** En la vista de edificio la losa nunca está extraída. */
-  const effectiveExtract = stage === "building" ? 0 : extract;
+  /**
+   * Objetivo de extracción de la losa. La interpolación ocurre dentro del
+   * canvas (useFrame + ref en ArchitecturalMassing), así que esto es un
+   * valor discreto: cambia una vez por etapa, no 60 veces por segundo.
+   */
+  const extractTarget = stage === "building" ? 0 : 1;
 
   const floorUnits = useMemo(
     () => (selectedFloor != null ? getUnitsForFloor(config, selectedFloor) : []),
@@ -410,6 +380,8 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
               stage={stage}
               focusFloor={selectedFloor}
               lite={lite}
+              active={active && !viewerRoom}
+              onContextLost={() => setContextLost(true)}
             >
               {stage === "unit" && plan ? (
                 <FloorPlate3D
@@ -430,7 +402,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
                     onHoverFloor={setHoveredFloor}
                     onSelectFloor={selectFloor}
                     dimOthers={selectedFloor != null}
-                    extract={effectiveExtract}
+                    extract={extractTarget}
                   />
                   {/* Hotspots de espacios comunes — abren su render real */}
                   {!lite && stage === "building" && (
@@ -448,9 +420,11 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
               <p>
                 {reducedMotion
                   ? "Vista 3D desactivada por preferencia de movimiento reducido. El recorrido por pisos y unidades sigue disponible en el panel."
-                  : !webglOk
-                    ? "WebGL no disponible en este dispositivo. Podés explorar pisos, unidades y planos desde el panel."
-                    : "Preparando la escena…"}
+                  : contextLost
+                    ? "La escena 3D se interrumpió en este dispositivo. Podés seguir explorando pisos, unidades y planos desde el panel."
+                    : !webglOk
+                      ? "WebGL no disponible en este dispositivo. Podés explorar pisos, unidades y planos desde el panel."
+                      : "Preparando la escena…"}
               </p>
             </div>
           )}

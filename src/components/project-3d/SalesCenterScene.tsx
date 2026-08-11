@@ -6,6 +6,7 @@ import { ACESFilmicToneMapping } from "three";
 import { Suspense, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import type { Project3DConfig } from "@/data/project3d";
+import { WebGLGuard } from "./WebGLGuard";
 
 export type SalesStage = "building" | "floor" | "unit";
 
@@ -15,16 +16,25 @@ type Props = {
   /** Nivel enfocado — mueve el target de la cámara a su altura */
   focusFloor: number | null;
   lite: boolean;
+  /** false detiene el render loop (fuera de viewport o pestaña oculta) */
+  active?: boolean;
+  /** Se llama si el contexto WebGL se pierde sin recuperarse */
+  onContextLost?: () => void;
   children: ReactNode;
 };
 
 /** Encuadres por etapa: posición y punto de mira de la cámara. */
+/**
+ * Encuadres calibrados a la volumetría real: torre angosta de ~4.2 de alto.
+ * El plano de la vista general toma el edificio de vereda, en tres cuartos,
+ * que es el ángulo de los renders del proyecto.
+ */
 const SHOTS: Record<
   SalesStage,
   { position: [number, number, number]; target: [number, number, number] }
 > = {
-  building: { position: [4.6, 2.9, 6.4], target: [0, 1.9, 0] },
-  floor: { position: [3.4, 2.2, 4.4], target: [0, 1.9, 0] },
+  building: { position: [4.9, 3.1, 6.1], target: [0, 2.05, 0] },
+  floor: { position: [3.6, 2.4, 4.6], target: [0, 2.0, 0] },
   unit: { position: [0, 4.4, 4.0], target: [0, 0.2, 0] },
 };
 
@@ -54,11 +64,12 @@ function DirectedCamera({
     targetPos.current.set(...s.position);
     targetLook.current.set(...s.target);
 
-    // En etapa "floor" la cámara sube a la altura del piso elegido
+    // En etapa "floor" la cámara sube a la altura del nivel elegido.
+    // Debe coincidir con floorY() de ArchitecturalMassing.
     if (stage === "floor" && focusFloor != null) {
-      const y = 0.42 + (focusFloor - 0.5) * 0.42;
+      const y = 0.62 + (focusFloor - 0.5) * 0.4;
       targetLook.current.y = y;
-      targetPos.current.y = y + 1.1;
+      targetPos.current.y = y + 1.0;
     }
 
     // Amortiguación independiente del framerate
@@ -88,6 +99,8 @@ export function SalesCenterScene({
   stage,
   focusFloor,
   lite,
+  active = true,
+  onContextLost,
   children,
 }: Props) {
   const orbitRef = useRef<React.ComponentRef<typeof OrbitControls> | null>(null);
@@ -95,18 +108,20 @@ export function SalesCenterScene({
 
   return (
     <Canvas
-      dpr={lite ? [1, 1.25] : [1, 1.6]}
+      frameloop={active ? "always" : "never"}
+      dpr={lite ? [1, 1.5] : [1, 1.75]}
       gl={{
         alpha: false,
         antialias: !lite,
-        powerPreference: "high-performance",
+        powerPreference: lite ? "default" : "high-performance",
         stencil: false,
+        depth: true,
       }}
       camera={{ position: SHOTS.building.position, fov: 38, near: 0.1, far: 60 }}
       shadows={!lite ? "soft" : false}
       onCreated={({ gl }) => {
         gl.toneMapping = ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.15;
+        gl.toneMappingExposure = 1.12;
       }}
       style={{ width: "100%", height: "100%", display: "block" }}
     >
@@ -155,8 +170,15 @@ export function SalesCenterScene({
         enablePan={false}
         enableDamping
         dampingFactor={0.07}
-        rotateSpeed={0.42}
+        rotateSpeed={lite ? 0.55 : 0.42}
         zoomSpeed={0.5}
+        /* En táctil: un dedo rota, dos dedos hacen zoom. El scroll vertical
+           de la página nunca queda capturado por la escena. */
+        enableZoom={!lite}
+        touches={{
+          ONE: THREE.TOUCH.ROTATE,
+          TWO: THREE.TOUCH.DOLLY_ROTATE,
+        }}
         minDistance={isUnit ? 3.2 : 3.6}
         maxDistance={isUnit ? 8 : 12}
         minPolarAngle={Math.PI * (isUnit ? 0.08 : 0.2)}
@@ -169,6 +191,8 @@ export function SalesCenterScene({
         floorCount={config.schematicFloors}
         orbitRef={orbitRef}
       />
+
+      <WebGLGuard onLost={onContextLost} />
 
       <Suspense fallback={null}>{children}</Suspense>
     </Canvas>

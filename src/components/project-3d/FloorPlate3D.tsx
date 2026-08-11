@@ -52,6 +52,14 @@ export function FloorPlate3D({
 
   const plateH = PLATE_W / plan.aspect;
 
+  /**
+   * Altura de muro interpolada dentro del canvas. El slider actualiza el
+   * objetivo; la escala se aplica por ref en useFrame, así arrastrar no
+   * dispara reconciliación de React por frame.
+   */
+  const wallRefs = useRef<THREE.Mesh[]>([]);
+  const morphNow = useRef(morph);
+
   // Convierte rect normalizado → coordenadas de escena centradas
   const toScene = useMemo(
     () => (r: { x: number; y: number; w: number; h: number }) => ({
@@ -63,17 +71,27 @@ export function FloorPlate3D({
     [plateH],
   );
 
-  useFrame(() => {
-    if (!group.current) return;
-    // Rotación mínima de presencia — no gira como demo
-    group.current.rotation.y = THREE.MathUtils.lerp(
-      group.current.rotation.y,
-      -0.12,
-      0.04,
-    );
+  useFrame((_, delta) => {
+    const k = 1 - Math.exp(-6 * Math.min(delta, 0.1));
+    morphNow.current += (morph - morphNow.current) * k;
+
+    // Escala vertical de los muros desde su base
+    const h = Math.max(0.001, morphNow.current);
+    for (const wall of wallRefs.current) {
+      if (!wall) continue;
+      wall.scale.y = h;
+      wall.position.y = (h * WALL_H) / 2;
+    }
+
+    if (group.current) {
+      group.current.rotation.y +=
+        (-0.12 - group.current.rotation.y) * (1 - Math.exp(-2.5 * delta));
+    }
   });
 
-  const wallHeight = Math.max(0.001, morph * WALL_H);
+  /** Altura nominal: los muros se crean a altura plena y se escalan por ref. */
+  const wallHeight = WALL_H;
+  let wallIndex = 0;
 
   return (
     <group ref={group} position={[0, 0, 0]}>
@@ -133,14 +151,26 @@ export function FloorPlate3D({
             {/* Muros perimetrales extruidos — se elevan con el morph */}
             {!isBalcony && (
               <>
-                <mesh position={[0, wallHeight / 2, -d / 2]} castShadow>
+                <mesh
+                  ref={(n) => {
+                    if (n) wallRefs.current[wallIndex++] = n;
+                  }}
+                  position={[0, wallHeight / 2, -d / 2]}
+                  castShadow
+                >
                   <boxGeometry args={[w, wallHeight, WALL_T]} />
                   <meshStandardMaterial
                     color={emphasised ? "#6b6749" : "#f0ece2"}
                     roughness={0.8}
                   />
                 </mesh>
-                <mesh position={[-w / 2, wallHeight / 2, 0]} castShadow>
+                <mesh
+                  ref={(n) => {
+                    if (n) wallRefs.current[wallIndex++] = n;
+                  }}
+                  position={[-w / 2, wallHeight / 2, 0]}
+                  castShadow
+                >
                   <boxGeometry args={[WALL_T, wallHeight, d]} />
                   <meshStandardMaterial
                     color={emphasised ? "#6b6749" : "#f0ece2"}
@@ -152,8 +182,14 @@ export function FloorPlate3D({
 
             {/* Baranda del balcón */}
             {isBalcony && (
-              <mesh position={[w / 2, wallHeight * 0.65, 0]} castShadow>
-                <boxGeometry args={[WALL_T * 0.6, wallHeight * 1.3, d]} />
+              <mesh
+                ref={(n) => {
+                  if (n) wallRefs.current[wallIndex++] = n;
+                }}
+                position={[w / 2, wallHeight / 2, 0]}
+                castShadow
+              >
+                <boxGeometry args={[WALL_T * 0.6, wallHeight, d]} />
                 <meshStandardMaterial
                   color="#4f4c37"
                   roughness={0.45}

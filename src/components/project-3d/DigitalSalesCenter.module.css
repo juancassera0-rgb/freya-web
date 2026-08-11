@@ -402,7 +402,15 @@
   position: relative;
   min-height: min(62vh, 520px);
   background: #f0eee8;
-  touch-action: none;
+  /* pan-y deja pasar el scroll vertical de la página: el arrastre
+     horizontal rota la escena, pero el usuario nunca queda atrapado. */
+  touch-action: pan-y;
+}
+
+@media (pointer: fine) {
+  .stage {
+    touch-action: none;
+  }
 }
 
 .canvasLoading,

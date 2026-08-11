@@ -10,6 +10,7 @@ import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { usePerfFlags } from "./useClientFlags";
+import { useCanvasActive } from "./useCanvasActive";
 import styles from "./ArchitecturalHero.module.css";
 
 const Project3DScene = dynamic(
@@ -35,6 +36,7 @@ export function ArchitecturalHero({ project, config, zones }: Props) {
   const { reducedMotion, lite, webglOk } = usePerfFlags();
   const enabled = !reducedMotion && webglOk;
   const { progress } = useScrollProgress(sectionRef, { enabled, steps: 60 });
+  const { active } = useCanvasActive(sectionRef, { rootMargin: "0px" });
 
   const year = new Date().getFullYear();
 
@@ -54,6 +56,7 @@ export function ArchitecturalHero({ project, config, zones }: Props) {
               cameraProgress={progress}
               performanceMode={lite ? "lite" : "full"}
               enablePointerParallax={!lite}
+              active={active}
             >
               <ArchitecturalMassing config={config} lite={lite} />
             </Project3DScene>

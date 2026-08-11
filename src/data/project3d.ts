@@ -161,49 +161,54 @@ export const beauchef3d: Project3DConfig = {
       id: "lobby",
       label: "Lobby",
       kind: "lobby",
-      position: [0, 0.45, 1.35],
+      position: [0, 0.4, 1.35],
       body: "Acceso y recepción del edificio.",
     },
     {
       id: "amenities",
       label: "Amenities",
       kind: "amenity",
-      position: [1.1, 1.1, 1.1],
+      position: [1.05, 1.5, 1.15],
       body: "Espacios comunes del proyecto — detalle oficial pendiente.",
     },
     {
       id: "parking",
       label: "Cocheras",
       kind: "parking",
-      position: [-1.05, 0.35, 0.9],
+      position: [-0.95, 0.3, 1.1],
       body: "Acceso a cocheras en planta baja / subsuelo (esquema).",
     },
     {
       id: "rooftop",
       label: "Último nivel",
       kind: "rooftop",
-      position: [0, 4.35, 0.35],
+      position: [0, 4.15, 0.55],
       body: "Nivel superior con unidad exclusiva y expansión.",
     },
   ],
+  /**
+   * Encuadres calibrados a la volumetría real (torre angosta, ~4.2 de alto).
+   * Intro: contrapicado desde la vereda. Overview: tres cuartos, el ángulo
+   * de los renders. Detail: aproximación a las losas de balcón.
+   */
   camera: {
     intro: {
       id: "intro",
       label: "Entrada",
-      position: [2.2, 1.1, 3.4],
-      target: [0.4, 1.8, 0],
+      position: [2.4, 0.9, 3.6],
+      target: [0.2, 2.2, 0],
     },
     overview: {
       id: "overview",
       label: "Vista general",
-      position: [4.2, 2.6, 6.4],
-      target: [0, 1.7, 0],
+      position: [4.9, 3.1, 6.1],
+      target: [0, 2.05, 0],
     },
     detail: {
       id: "detail",
       label: "Acercamiento",
-      position: [2.8, 2.2, 4.2],
-      target: [0, 2.1, 0],
+      position: [3.0, 2.6, 3.9],
+      target: [0, 2.4, 0],
     },
   },
   story: [

@@ -20,6 +20,8 @@ type Props = {
   controlMode?: "cinematic" | "orbit";
   /** Baja densidades en móvil / coarse pointer */
   performanceMode?: "full" | "lite";
+  /** false detiene el render loop (fuera de viewport o pestaña oculta) */
+  active?: boolean;
 };
 
 export function Project3DScene({
@@ -31,6 +33,7 @@ export function Project3DScene({
   enablePointerParallax = true,
   controlMode = "cinematic",
   performanceMode = "full",
+  active = true,
 }: Props) {
   const isHero = variant === "hero";
   const isOrbit = controlMode === "orbit";
@@ -44,11 +47,12 @@ export function Project3DScene({
   return (
     <Canvas
       className={className}
-      dpr={lite ? [1, 1.25] : [1, 1.5]}
+      frameloop={active ? "always" : "never"}
+      dpr={lite ? [1, 1.5] : [1, 1.75]}
       gl={{
         alpha: false,
         antialias: !lite,
-        powerPreference: "high-performance",
+        powerPreference: lite ? "default" : "high-performance",
         stencil: false,
       }}
       camera={{
