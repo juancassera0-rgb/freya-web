@@ -30,10 +30,7 @@ export function AnimatedCounter({
   const [started, setStarted] = useState(!startOnView);
 
   useEffect(() => {
-    if (!startOnView) {
-      setStarted(true);
-      return;
-    }
+    if (!startOnView) return;
     const el = ref.current;
     if (!el) return;
 
@@ -130,22 +127,18 @@ export function CountedText({
     return <>{text}</>;
   }
 
-  let numberIndex = 0;
+  const isNumericPart = (part: string) =>
+    /^\d[\d.]*$/.test(part) && Number.isFinite(Number(part.replace(/\./g, "")));
 
   return (
     <>
       {parts.map((part, i) => {
-        if (!/^\d[\d.]*$/.test(part)) {
+        if (!isNumericPart(part)) {
           return <span key={`t-${i}`}>{part}</span>;
         }
 
         const value = Number(part.replace(/\./g, ""));
-        if (!Number.isFinite(value)) {
-          return <span key={`t-${i}`}>{part}</span>;
-        }
-
-        const stagger = numberIndex;
-        numberIndex += 1;
+        const stagger = parts.slice(0, i).filter(isNumericPart).length;
 
         return (
           <AnimatedCounter

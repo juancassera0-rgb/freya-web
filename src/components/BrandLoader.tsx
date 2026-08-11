@@ -6,21 +6,24 @@ import styles from "./BrandLoader.module.css";
 
 const SESSION_KEY = "freya-brand-intro";
 
+type Phase = "boot" | "show" | "hide" | "done";
+
+function getInitialPhase(): Phase {
+  if (typeof window === "undefined") return "boot";
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const seen = sessionStorage.getItem(SESSION_KEY) === "1";
+  return reduced || seen ? "done" : "boot";
+}
+
 export function BrandLoader() {
-  const [phase, setPhase] = useState<"boot" | "show" | "hide" | "done">(
-    "boot",
-  );
+  const [phase, setPhase] = useState<Phase>(getInitialPhase);
 
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const seen = sessionStorage.getItem(SESSION_KEY) === "1";
+    if (phase !== "boot") return;
 
-    if (reduced || seen) {
-      setPhase("done");
-      return;
-    }
-
-    setPhase("show");
+    // Timers (no setState síncrono en el cuerpo del efecto): arranca la
+    // animación en el siguiente tick, luego hide/done en cascada.
+    const showTimer = window.setTimeout(() => setPhase("show"), 0);
     const hideTimer = window.setTimeout(() => setPhase("hide"), 1400);
     const doneTimer = window.setTimeout(() => {
       sessionStorage.setItem(SESSION_KEY, "1");
@@ -28,10 +31,11 @@ export function BrandLoader() {
     }, 2100);
 
     return () => {
+      window.clearTimeout(showTimer);
       window.clearTimeout(hideTimer);
       window.clearTimeout(doneTimer);
     };
-  }, []);
+  }, [phase]);
 
   if (phase === "boot" || phase === "done") return null;
 

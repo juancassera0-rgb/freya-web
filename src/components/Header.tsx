@@ -22,19 +22,20 @@ export function Header() {
   const transparent = isHome && !scrolled && !open;
 
   useEffect(() => {
-    if (!isHome) {
-      setScrolled(false);
-      return;
-    }
+    if (!isHome) return;
     const onScroll = () => setScrolled(window.scrollY > 48);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [isHome]);
 
-  useEffect(() => {
+  // Cierra el menú mobile al cambiar de ruta (ajuste de estado durante el render,
+  // sin efecto: https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";

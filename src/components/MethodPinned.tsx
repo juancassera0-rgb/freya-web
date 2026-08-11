@@ -23,10 +23,7 @@ export function MethodPinned({ compact = false }: Props) {
   const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
-    if (compact) {
-      setPinned(false);
-      return;
-    }
+    if (compact) return;
 
     const mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const mqDesktop = window.matchMedia("(min-width: 900px)");
@@ -43,6 +40,9 @@ export function MethodPinned({ compact = false }: Props) {
       mqDesktop.removeEventListener("change", sync);
     };
   }, [compact]);
+
+  // `compact` siempre gana sobre el estado async de media query.
+  const isPinned = !compact && pinned;
 
   useEffect(() => {
     if (!pinned) return;
@@ -66,7 +66,7 @@ export function MethodPinned({ compact = false }: Props) {
     return () => window.removeEventListener("scroll", onScroll);
   }, [pinned]);
 
-  if (!pinned) {
+  if (!isPinned) {
     return (
       <div className={`container ${styles.stackWrap}`}>
         <ol className={styles.stack}>

@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  createElement,
   useEffect,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
+  type Ref,
 } from "react";
 import styles from "./ScrollReveal.module.css";
 
@@ -52,20 +52,47 @@ export function ScrollReveal({
     transitionDelay: visible ? `${delay}ms` : "0ms",
   };
 
-  return createElement(
-    as,
-    {
-      ref,
-      className: [
-        styles.reveal,
-        styles[`from-${from}`],
-        visible ? styles.visible : "",
-        className ?? "",
-      ]
-        .filter(Boolean)
-        .join(" "),
-      style,
-    },
-    children,
-  );
+  const revealClassName = [
+    styles.reveal,
+    styles[`from-${from}`],
+    visible ? styles.visible : "",
+    className ?? "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  switch (as) {
+    case "li":
+      return (
+        <li ref={ref as Ref<HTMLLIElement>} className={revealClassName} style={style}>
+          {children}
+        </li>
+      );
+    case "section":
+      return (
+        <section
+          ref={ref as Ref<HTMLElement>}
+          className={revealClassName}
+          style={style}
+        >
+          {children}
+        </section>
+      );
+    case "article":
+      return (
+        <article
+          ref={ref as Ref<HTMLElement>}
+          className={revealClassName}
+          style={style}
+        >
+          {children}
+        </article>
+      );
+    default:
+      return (
+        <div ref={ref as Ref<HTMLDivElement>} className={revealClassName} style={style}>
+          {children}
+        </div>
+      );
+  }
 }
