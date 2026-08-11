@@ -1,0 +1,48 @@
+.fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 3rem;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: var(--whatsapp);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: none;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.fab:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%, #fff 0 18%, transparent 19%),
+    linear-gradient(135deg, #fff 0 40%, transparent 41%);
+  border: 2px solid #fff;
+}
+
+.label {
+  display: none;
+}
+
+@media (min-width: 720px) {
+  .label {
+    display: inline;
+  }
+
+  .fab {
+    right: 1.5rem;
+    bottom: 1.5rem;
+  }
+}

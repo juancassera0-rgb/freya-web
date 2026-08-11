@@ -1,0 +1,36 @@
+.reveal {
+  opacity: 0;
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+  will-change: opacity, transform;
+}
+
+.from-up {
+  transform: translate3d(0, var(--reveal-y), 0);
+}
+
+.from-left {
+  transform: translate3d(calc(var(--reveal-y) * -1.35), 0, 0);
+}
+
+.from-right {
+  transform: translate3d(calc(var(--reveal-y) * 1.35), 0, 0);
+}
+
+.from-fade {
+  transform: none;
+}
+
+.visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

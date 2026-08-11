@@ -1,0 +1,33 @@
+.root {
+  display: block;
+}
+
+.wordWrap {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+
+.word {
+  display: inline-block;
+  transform: translate3d(0, 110%, 0);
+  opacity: 0;
+  transition:
+    transform var(--dur-slow) var(--ease-emph),
+    opacity var(--dur-slow) var(--ease-out);
+}
+
+.visible .word {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}

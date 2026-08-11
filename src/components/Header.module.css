@@ -1,0 +1,436 @@
+/* Header — OCI (editorial tipográfico + overlay) · Illoca (apertura inmersiva) · Brand Freya */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  transition:
+    background var(--dur-med) var(--ease-out),
+    border-color var(--dur-med) var(--ease-out),
+    transform var(--dur-med) var(--ease-out);
+}
+
+.header[data-home="true"] {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+}
+
+.header[data-transparent="true"] {
+  background: transparent;
+  backdrop-filter: none;
+  border-bottom-color: transparent;
+}
+
+.header[data-transparent="false"][data-home="true"],
+.header[data-open="true"] {
+  background: color-mix(in srgb, var(--off-white) 96%, transparent);
+  border-bottom-color: var(--line);
+}
+
+.header[data-open="true"][data-home="true"] {
+  background: transparent;
+  border-bottom-color: transparent;
+  backdrop-filter: none;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: var(--header-h);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  transition:
+    opacity var(--dur-med) var(--ease-out),
+    visibility var(--dur-med) ease,
+    transform var(--dur-med) var(--ease-out);
+  z-index: 2;
+}
+
+.brand[data-hidden="true"] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(0, -6px, 0);
+}
+
+.desktopNav {
+  display: none;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* OCI: tipografía editorial + underline reveal */
+.link {
+  position: relative;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-block: 0.35rem;
+  transition: color var(--dur-fast) ease;
+}
+
+.linkLabel {
+  position: relative;
+  display: inline-block;
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur-med) var(--ease-out);
+}
+
+.link:hover::after,
+.link[data-active="true"]::after {
+  transform: scaleX(1);
+}
+
+.link:hover,
+.link[data-active="true"] {
+  color: var(--accent);
+}
+
+.header[data-transparent="true"] .link {
+  color: rgba(246, 246, 246, 0.82);
+}
+
+.header[data-transparent="true"] .link:hover,
+.header[data-transparent="true"] .link[data-active="true"] {
+  color: #fff;
+}
+
+/* Brand: CTA con cuadrado m² · Illoca: microinteracción */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid var(--accent);
+  transition:
+    gap var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+
+.ctaSq {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1px solid currentColor;
+  flex-shrink: 0;
+  transition: background var(--dur-fast) ease;
+}
+
+.cta:hover {
+  gap: 0.75rem;
+}
+
+.cta:hover .ctaSq {
+  background: currentColor;
+}
+
+.header[data-transparent="true"] .cta {
+  color: var(--off-white);
+  border-bottom-color: rgba(246, 246, 246, 0.8);
+}
+
+.menuBtn {
+  position: relative;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--camo);
+  background: var(--off-white);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+
+.menuBtn:hover {
+  background: var(--camo);
+  color: var(--off-white);
+}
+
+.menuLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.menuIcon {
+  position: relative;
+  width: 1.05rem;
+  height: 0.7rem;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.menuIcon span {
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background: currentColor;
+  transition:
+    transform var(--dur-med) var(--ease-out),
+    opacity var(--dur-fast) ease;
+  transform-origin: center;
+}
+
+.menuIcon[data-open="true"] span:first-child {
+  transform: translateY(4.5px) rotate(45deg);
+}
+
+.menuIcon[data-open="true"] span:last-child {
+  transform: translateY(-4.5px) rotate(-45deg);
+}
+
+.header[data-transparent="true"] .menuBtn {
+  border-color: rgba(246, 246, 246, 0.85);
+  background: rgba(29, 28, 27, 0.55);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+
+.header[data-transparent="true"] .menuBtn:hover {
+  background: rgba(29, 28, 27, 0.85);
+}
+
+.header[data-open="true"] .menuBtn {
+  border-color: rgba(246, 246, 246, 0.55);
+  background: transparent;
+  color: #fff;
+}
+
+/* Illoca: apertura inmersiva por clip · OCI: overlay oscuro editorial */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: var(--dark);
+  color: var(--off-white);
+  clip-path: inset(0 0 100% 0);
+  pointer-events: none;
+  transition: clip-path var(--dur-slow) var(--ease-emph);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.overlay[data-open="true"] {
+  clip-path: inset(0 0 0 0);
+  pointer-events: auto;
+}
+
+.overlayWash {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--camo) 18%, transparent) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(246, 246, 246, 0.04) 0%,
+      transparent 40%
+    );
+  pointer-events: none;
+  /* Brand grid vertical — OCI */
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(246, 246, 246, 0.06) 1px,
+      transparent 1px
+    );
+  background-size: calc(100% / 4) 100%;
+  opacity: 0.55;
+}
+
+.overlayInner {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: grid;
+  align-content: start;
+  gap: 2rem;
+  padding-top: 5.5rem;
+  padding-bottom: 3rem;
+}
+
+.overlayBrand {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  transition:
+    opacity var(--dur-med) var(--ease-out),
+    transform var(--dur-med) var(--ease-out);
+  transition-delay: 0ms;
+}
+
+.overlay[data-open="true"] .overlayBrand {
+  opacity: 0.92;
+  transform: none;
+  transition-delay: 120ms;
+}
+
+.overlayNav {
+  display: grid;
+  gap: 0;
+}
+
+.overlayLink {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  font-size: clamp(1.35rem, 6.5vw, 2.35rem);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border-top: 1px solid rgba(246, 246, 246, 0.14);
+  padding-block: 0.95rem;
+  overflow: hidden;
+}
+
+.overlayLabel {
+  display: inline-block;
+  transform: translate3d(0, 110%, 0);
+  opacity: 0;
+  transition:
+    transform var(--dur-slow) var(--ease-emph),
+    opacity var(--dur-slow) var(--ease-out),
+    color var(--dur-fast) ease;
+  transition-delay: 0ms;
+}
+
+.overlayIndex {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--off-white) 45%, #c4b79a);
+  min-width: 1.75rem;
+  transform: translate3d(0, 8px, 0);
+  opacity: 0;
+  transition:
+    transform var(--dur-med) var(--ease-out),
+    opacity var(--dur-med) var(--ease-out);
+  transition-delay: 0ms;
+}
+
+.overlay[data-open="true"] .overlayLabel {
+  transform: none;
+  opacity: 1;
+  transition-delay: calc(160ms + var(--i, 0) * var(--stagger));
+}
+
+.overlay[data-open="true"] .overlayIndex {
+  transform: none;
+  opacity: 1;
+  transition-delay: calc(120ms + var(--i, 0) * var(--stagger));
+}
+
+.overlayLink:hover .overlayLabel,
+.overlayLink[data-active="true"] .overlayLabel {
+  color: #c4b79a;
+}
+
+.overlayMeta {
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(246, 246, 246, 0.14);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(246, 246, 246, 0.55);
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  transition:
+    opacity var(--dur-med) var(--ease-out),
+    transform var(--dur-med) var(--ease-out);
+}
+
+.overlay[data-open="true"] .overlayMeta {
+  opacity: 1;
+  transform: none;
+  transition-delay: 420ms;
+}
+
+@media (min-width: 1024px) {
+  .desktopNav {
+    display: flex;
+  }
+
+  /* OCI: menú disponible también en desktop para overlay editorial */
+  .menuBtn {
+    display: inline-flex;
+    margin-left: 0.35rem;
+  }
+
+  .overlayInner {
+    padding-top: 6.5rem;
+    max-width: min(100% - 2rem, 920px);
+  }
+
+  .overlayLink {
+    font-size: clamp(2rem, 4.2vw, 3rem);
+    padding-block: 1.1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    transition: none;
+    clip-path: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .overlay[data-open="true"] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .overlayLabel,
+  .overlayIndex,
+  .overlayBrand,
+  .overlayMeta,
+  .link::after {
+    transition: none;
+  }
+
+  .overlayLabel,
+  .overlayIndex {
+    transform: none;
+    opacity: 1;
+  }
+}

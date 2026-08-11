@@ -1,0 +1,125 @@
+.brandLink {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.wordmark,
+.mark {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+.logo {
+  width: auto;
+  height: 1.55rem;
+  object-fit: contain;
+  display: block;
+}
+
+.iso {
+  width: 1.35rem;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* Cuadrado variable — cambia por variante (Brand Guideline) */
+.sq {
+  position: absolute;
+  border: 1px solid var(--camo);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wordmark[data-light="true"] .sq {
+  border-color: color-mix(in srgb, var(--off-white) 75%, transparent);
+}
+
+/* Header: cuadrado chico abajo-derecha del wordmark */
+.v-header .logo {
+  height: 1.55rem;
+}
+
+.v-header .sq {
+  right: -0.35rem;
+  bottom: -0.35rem;
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.v-header-light .logo {
+  height: 1.55rem;
+}
+
+.v-header-light .sq {
+  right: -0.4rem;
+  top: -0.35rem;
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* Hero: cuadrado más presente, offset distinto */
+.v-hero .logo {
+  width: min(440px, 82vw);
+  height: auto;
+}
+
+.v-hero .sq {
+  right: -0.7rem;
+  bottom: -0.7rem;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-color: rgba(196, 183, 154, 0.9);
+}
+
+/* Footer: cuadrado a la izquierda del logo */
+.v-footer .logo {
+  height: 2.75rem;
+}
+
+.v-footer .sq {
+  left: -0.55rem;
+  top: -0.45rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-color: rgba(196, 183, 154, 0.7);
+}
+
+/* Mark / loader: marco alrededor del iso */
+.mark {
+  display: inline-grid;
+  place-items: center;
+}
+
+.v-mark {
+  width: 2rem;
+  height: 2rem;
+}
+
+.v-mark .iso {
+  width: 1.05rem;
+}
+
+.v-mark .sq {
+  inset: 0;
+  width: auto;
+  height: auto;
+}
+
+.v-loader {
+  width: 6.5rem;
+  height: 6.5rem;
+}
+
+.v-loader .iso {
+  width: 3.5rem;
+  filter: none;
+}
+
+.v-loader .sq {
+  inset: 0;
+  width: auto;
+  height: auto;
+}

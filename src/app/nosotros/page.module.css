@@ -1,0 +1,97 @@
+.block {
+  margin-top: 2.5rem;
+}
+
+.card {
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.card h2 {
+  margin-bottom: 0.75rem;
+  font-size: 1.45rem;
+}
+
+.card p {
+  color: var(--ink-soft);
+}
+
+.stats {
+  margin-top: 2.5rem;
+  padding: 1.75rem;
+  background: var(--accent-soft);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.value {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  margin-top: 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.cta {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.ctaLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem 1.75rem;
+  margin-top: 1.25rem;
+}
+
+.ctaPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 0.25rem;
+  transition: gap 0.25s ease;
+}
+
+.ctaPrimary:hover {
+  gap: 0.8rem;
+}
+
+.ctaText {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  transition: color 0.25s ease;
+}
+
+.ctaText:hover {
+  color: var(--accent);
+}
+
+@media (min-width: 800px) {
+  .statsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

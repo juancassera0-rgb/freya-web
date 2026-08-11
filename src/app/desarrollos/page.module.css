@@ -1,0 +1,21 @@
+.page {
+  overflow: hidden;
+}
+
+.block {
+  margin-top: 3.25rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.block h2 {
+  margin-bottom: 0.35rem;
+  font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+}
+
+.blockLead {
+  color: var(--ink-soft);
+  font-weight: 300;
+  max-width: 36rem;
+  margin-bottom: 1.25rem;
+}

@@ -1,0 +1,60 @@
+.intro {
+  padding-bottom: 1.5rem;
+}
+
+.banner {
+  margin-top: 0.5rem;
+  padding: 2.25rem 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.banner h2 {
+  margin-bottom: 0.75rem;
+}
+
+.banner p {
+  color: var(--ink-soft);
+  max-width: 36rem;
+  margin-bottom: 0.5rem;
+  font-weight: 300;
+}
+
+.bannerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem 1.75rem;
+  margin-top: 1.35rem;
+}
+
+.bannerPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 0.25rem;
+  transition: gap 0.25s ease;
+}
+
+.bannerPrimary:hover {
+  gap: 0.8rem;
+}
+
+.bannerText {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  transition: color 0.25s ease;
+}
+
+.bannerText:hover {
+  color: var(--accent);
+}

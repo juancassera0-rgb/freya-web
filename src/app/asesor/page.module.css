@@ -1,0 +1,166 @@
+.hero {
+  display: grid;
+  gap: 1.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem 1.75rem;
+  margin-top: 1.5rem;
+}
+
+.ctaPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 0.25rem;
+  transition: gap 0.25s ease;
+}
+
+.ctaPrimary:hover {
+  gap: 0.8rem;
+}
+
+.ctaText {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  transition: color 0.25s ease;
+}
+
+.ctaText:hover {
+  color: var(--accent);
+}
+
+.aside {
+  padding: 1.5rem 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.asideTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+.aside ul {
+  list-style: none;
+  display: grid;
+  gap: 0.95rem;
+}
+
+.aside a {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color 0.2s ease;
+}
+
+.aside a span {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.aside a:hover {
+  color: var(--accent);
+}
+
+.asideNote {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.benefits {
+  display: grid;
+  gap: 0;
+  margin-bottom: 2.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.benefits article {
+  padding: 1.35rem 0;
+  border-bottom: 1px solid var(--line);
+  transition: transform 0.25s ease;
+}
+
+.benefits article:hover {
+  transform: translateX(4px);
+}
+
+.benefits h2 {
+  font-size: 1.05rem;
+  margin-bottom: 0.45rem;
+}
+
+.benefits p {
+  color: var(--ink-soft);
+  font-weight: 500;
+  max-width: 36rem;
+}
+
+.formBlock {
+  display: grid;
+  gap: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.inlineLink {
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  transition: border-color 0.25s ease;
+}
+
+.inlineLink:hover {
+  border-bottom-color: var(--accent);
+}
+
+@media (min-width: 860px) {
+  .hero {
+    grid-template-columns: 1.4fr 0.9fr;
+    align-items: start;
+  }
+
+  .aside {
+    padding: 0 0 0 1.75rem;
+    border-top: none;
+    border-left: 1px solid var(--line);
+  }
+
+  .benefits {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0 2rem;
+  }
+
+  .benefits article {
+    border-bottom: none;
+    padding-right: 0.5rem;
+  }
+
+  .formBlock {
+    grid-template-columns: 0.9fr 1.1fr;
+    align-items: start;
+  }
+}

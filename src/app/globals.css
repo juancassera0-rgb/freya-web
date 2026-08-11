@@ -1,40 +1,121 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@font-face {
+  font-family: "Neue Regrade";
+  src: url("/fonts/Neue-Regrade-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@font-face {
+  font-family: "Neue Regrade";
+  src: url("/fonts/Neue-Regrade-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Neue Regrade";
+  src: url("/fonts/Neue-Regrade-Semibold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Brand Guideline Freya 2025 — paleta oficial */
+  --bg: #f6f6f6; /* Off-White */
+  --bg-elevated: #efefef;
+  --surface: #ffffff;
+  --ink: #1d1c1b; /* Off-Black — tipografía */
+  --ink-soft: #3a3830;
+  --muted: #5a564c;
+  --line: #d4d0c6;
+  --line-strong: #9e9788;
+  --accent: #4f4c37; /* Camo */
+  --accent-hover: #3a3828;
+  --accent-soft: #e6e3d8;
+  --copper: #4f4c37;
+  --whatsapp: #1f6b45;
+  --dark: #1d1c1b;
+  --off-white: #f6f6f6;
+  --camo: #4f4c37;
+  --radius: 0;
+  --radius-lg: 0;
+  --font-display: "Neue Regrade", "Segoe UI", sans-serif;
+  --font-body: "Neue Regrade", "Segoe UI", sans-serif;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 7rem;
+  --max: 1140px;
+  --header-h: 3.5rem;
+  /* Sistema de movimiento — OCI (sobriedad) + Illoca (máscaras/stagger) */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-emph: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 0.25s;
+  --dur-med: 0.55s;
+  --dur-slow: 0.9s;
+  --dur-hero: 1.2s;
+  --reveal-y: 1.75rem;
+  --stagger: 55ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
+  scroll-behavior: auto;
 }
 
 body {
-  min-height: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  font-weight: 300; /* Neue Regrade Light — cuerpos */
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+main {
+  flex: 1;
+}
+
+.site-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  /* Deja ver el edificio WebGL de fondo sin taparlo del todo */
+  background: transparent;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+img {
+  max-width: 100%;
+  display: block;
 }
 
 a {
@@ -42,8 +123,252 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.container {
+  width: min(100% - 2rem, var(--max));
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: var(--space-8);
+}
+
+.section-tight {
+  padding-block: var(--space-7);
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: var(--space-3);
+}
+
+h1,
+h2,
+h3,
+.h-display {
+  font-family: var(--font-display);
+  font-weight: 600; /* Semibold — títulos de impacto */
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(2.1rem, 4.5vw, 3.4rem);
+}
+
+h2 {
+  font-weight: 500; /* Medium — secciones */
+  font-size: clamp(1.55rem, 3vw, 2.2rem);
+}
+
+h3 {
+  font-weight: 500;
+  font-size: clamp(1.15rem, 2vw, 1.35rem);
+}
+
+.lead {
+  font-size: clamp(1.05rem, 1.4vw, 1.18rem);
+  color: var(--ink-soft);
+  max-width: 38rem;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+/* Marco “metro cuadrado” — sistema gráfico de personalización */
+.sq {
+  position: relative;
+}
+
+.sq::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--camo) 22%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.grid-paper {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--camo) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--camo) 8%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: center top;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.85rem;
+  padding: 0.75rem 1.4rem;
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--off-white);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.btn-secondary:hover {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: transparent;
+  padding-inline: 0.5rem;
+}
+
+.btn-ghost:hover {
+  color: var(--accent);
+}
+
+.btn-whatsapp {
+  background: var(--whatsapp);
+  color: #fff;
+}
+
+.btn-whatsapp:hover {
+  filter: brightness(1.05);
+}
+
+.btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: var(--space-5);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+}
+
+.pill-active {
+  border-color: var(--accent);
+  color: #f8f7f3;
+  background: var(--accent);
+}
+
+.grid-2 {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+}
+
+.grid-3 {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+}
+
+.grid-4 {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (min-width: 720px) {
+  .grid-2 {
+    grid-template-columns: 1fr 1fr;
   }
+
+  .grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 100;
+  background: var(--ink);
+  color: #fff;
+  padding: 0.75rem 1rem;
+}
+
+.skip-link:focus {
+  top: 1rem;
 }
