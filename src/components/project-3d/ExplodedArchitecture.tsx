@@ -1,20 +1,19 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { MagneticCTA } from "@/components/experience/MagneticCTA";
 import { useScrollProgress } from "@/components/experience/useScrollProgress";
 import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
-import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { usePerfFlags } from "./useClientFlags";
 import { useCanvasActive } from "./useCanvasActive";
 import styles from "./ExplodedArchitecture.module.css";
 
-const Project3DScene = dynamic(
-  () => import("./Project3DScene").then((m) => m.Project3DScene),
-  { ssr: false, loading: () => <div className={styles.canvasFallback} /> },
-);
+const MassingCanvas = dynamic(() => import("./MassingCanvas"), {
+  ssr: false,
+  loading: () => <div className={styles.canvasFallback} />,
+});
 
 type Props = {
   project: Project;
@@ -38,9 +37,17 @@ type Chapter = {
  */
 export function ExplodedArchitecture({ project, config }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
-  const { reducedMotion, lite, webglOk } = usePerfFlags();
+  const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
   const enabled = !reducedMotion && webglOk;
-  const { progress } = useScrollProgress(sectionRef, { enabled, steps: 80 });
+  /**
+   * La UI sólo necesita saber en qué capítulo estamos (4 estados), así que
+   * cuantizamos a 4 pasos: 4 re-renders por sección en vez de 80.
+   * El 3D lee el progreso continuo desde rawRef.
+   */
+  const { progress, rawRef } = useScrollProgress(sectionRef, {
+    enabled,
+    steps: 4,
+  });
   const { mounted, active } = useCanvasActive(sectionRef, { rootMargin: "0px" });
 
   const chapters: Chapter[] = [
@@ -69,8 +76,24 @@ export function ExplodedArchitecture({ project, config }: Props) {
   // Fase activa a partir del progreso
   const phase = Math.min(3, Math.floor(progress * 4));
 
-  // Explode: crece entre 22% y 55%, se sostiene después
-  const explode = Math.min(1, Math.max(0, (progress - 0.22) / 0.33));
+  /**
+   * Explode derivado del progreso CONTINUO. Se recalcula por frame dentro
+   * del canvas, así la separación de losas es fluida aunque React sólo
+   * re-renderice al cambiar de capítulo.
+   */
+  const explodeRef = useRef(0);
+  useEffect(() => {
+    let raf = 0;
+    const sync = () => {
+      explodeRef.current = Math.min(
+        1,
+        Math.max(0, (rawRef.current - 0.22) / 0.33),
+      );
+      raf = requestAnimationFrame(sync);
+    };
+    if (enabled && active) raf = requestAnimationFrame(sync);
+    return () => cancelAnimationFrame(raf);
+  }, [enabled, active, rawRef]);
 
   // Piso destacado: aparece en la fase 2, se centra en la 3
   const highlightedFloor =
@@ -87,23 +110,19 @@ export function ExplodedArchitecture({ project, config }: Props) {
       <div className={styles.sticky}>
         <div className={styles.stage}>
           {enabled && mounted ? (
-            <Project3DScene
+            <MassingCanvas
               config={config}
               variant="studio"
-              controlMode="cinematic"
-              cameraProgress={progress}
-              performanceMode={lite ? "lite" : "full"}
+              cameraProgressRef={rawRef}
+              explodeRef={explodeRef}
+              highlightedFloor={highlightedFloor}
+              dimOthers={progress > 0.52}
+              lite={lite}
+              tier={tier}
+              touch={touch}
               enablePointerParallax={false}
               active={active}
-            >
-              <ArchitecturalMassing
-                config={config}
-                explode={explode}
-                highlightedFloor={highlightedFloor}
-                dimOthers={progress > 0.52}
-                lite={lite}
-              />
-            </Project3DScene>
+            />
           ) : (
             <div
               className={styles.poster}

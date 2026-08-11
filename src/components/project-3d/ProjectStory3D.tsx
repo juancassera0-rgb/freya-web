@@ -2,18 +2,18 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
+import { useScrollProgress } from "@/components/experience/useScrollProgress";
 import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
-import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { usePerfFlags } from "./useClientFlags";
 import { useCanvasActive } from "./useCanvasActive";
 import styles from "./ProjectStory3D.module.css";
 
-const Project3DScene = dynamic(
-  () => import("./Project3DScene").then((m) => m.Project3DScene),
-  { ssr: false, loading: () => <div className={styles.canvasFallback} /> },
-);
+const MassingCanvas = dynamic(() => import("./MassingCanvas"), {
+  ssr: false,
+  loading: () => <div className={styles.canvasFallback} />,
+});
 
 type Props = {
   project: Project;
@@ -26,37 +26,31 @@ type Props = {
  */
 export function ProjectStory3D({ project, config }: Props) {
   const rootRef = useRef<HTMLElement>(null);
-  const { reducedMotion, lite } = usePerfFlags();
+  const { reducedMotion, lite, touch, tier } = usePerfFlags();
   const enabled = !reducedMotion;
-  const [progress, setProgress] = useState(0);
-  const [activeId, setActiveId] = useState(config.story[0]?.id ?? "");
-  const [highlightFloor, setHighlightFloor] = useState<number | null>(null);
   const { mounted, active } = useCanvasActive(rootRef, { rootMargin: "0px" });
 
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el || !enabled) return;
+  /**
+   * Antes esto era un listener de scroll sin throttle que llamaba setState
+   * en cada evento — re-renderizaba toda la sección (y el árbol 3D) decenas
+   * de veces por segundo. Ahora el progreso continuo va por ref al canvas y
+   * React sólo re-renderiza al cambiar de capítulo.
+   */
+  const { progress, rawRef } = useScrollProgress(rootRef, {
+    enabled,
+    steps: Math.max(4, config.story.length * 2),
+  });
 
-    const onScroll = () => {
-      const rect = el.getBoundingClientRect();
-      const travel = Math.max(1, rect.height - window.innerHeight);
-      const p = Math.min(1, Math.max(0, -rect.top / travel));
-      setProgress(p);
+  const activeChapter = useMemo(() => {
+    let current = config.story[0];
+    for (const chapter of config.story) {
+      if (progress >= chapter.cameraAt - 0.08) current = chapter;
+    }
+    return current;
+  }, [config.story, progress]);
 
-      let current = config.story[0];
-      for (const chapter of config.story) {
-        if (p >= chapter.cameraAt - 0.08) current = chapter;
-      }
-      if (current) {
-        setActiveId(current.id);
-        setHighlightFloor(current.highlightFloor ?? null);
-      }
-    };
-
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [config.story, enabled]);
+  const activeId = activeChapter?.id ?? "";
+  const highlightFloor = activeChapter?.highlightFloor ?? null;
 
   return (
     <section
@@ -67,21 +61,18 @@ export function ProjectStory3D({ project, config }: Props) {
       <div className={styles.sticky}>
         <div className={styles.stage}>
           {enabled && mounted ? (
-            <Project3DScene
+            <MassingCanvas
               config={config}
               variant="studio"
-              cameraProgress={progress}
+              cameraProgressRef={rawRef}
+              highlightedFloor={highlightFloor}
+              dimOthers={highlightFloor != null}
+              lite={lite}
+              tier={tier}
+              touch={touch}
               enablePointerParallax={!lite}
-              performanceMode={lite ? "lite" : "full"}
               active={active}
-            >
-              <ArchitecturalMassing
-                config={config}
-                highlightedFloor={highlightFloor}
-                dimOthers={highlightFloor != null}
-                lite={lite}
-              />
-            </Project3DScene>
+            />
           ) : (
             <div
               className={styles.poster}

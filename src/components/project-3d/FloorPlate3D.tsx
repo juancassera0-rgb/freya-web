@@ -22,6 +22,15 @@ const PLATE_W = 3.2;
 const WALL_H = 0.52;
 const WALL_T = 0.045;
 
+/**
+ * En dispositivos limitados sólo se etiquetan los ambientes accionables
+ * (los que tienen render). Cada etiqueta cuesta un nodo DOM actualizado
+ * por frame.
+ */
+function showLabel(_id: string, hasRender: boolean, lite: boolean) {
+  return lite ? hasRender : true;
+}
+
 const ROOM_COLORS: Record<string, string> = {
   living: "#d8d2c2",
   cocina: "#cfc9b8",
@@ -123,6 +132,12 @@ export function FloorPlate3D({
               position={[0, 0.005, 0]}
               rotation={[-Math.PI / 2, 0, 0]}
               receiveShadow
+              /* Táctil: el contacto inicial ya resalta el ambiente */
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                setHovered(room.id);
+                onHoverRoom(room.id);
+              }}
               onPointerOver={(e) => {
                 e.stopPropagation();
                 setHovered(room.id);
@@ -200,13 +215,18 @@ export function FloorPlate3D({
               </mesh>
             )}
 
-            {/* Etiqueta del ambiente — sólo desktop y con morph avanzado */}
-            {!lite && morph > 0.25 && (
+            {/* Etiqueta del ambiente.
+                Cada <Html> es un nodo DOM reposicionado por frame vía
+                proyección de matriz, así que en modo lite se muestran sólo
+                los ambientes con render (los accionables) y en desktop se
+                omiten los que no aportan. */}
+            {showLabel(room.id, hasRender, lite) && morph > 0.25 && (
               <Html
-                position={[0, wallHeight + 0.12, 0]}
+                position={[0, WALL_H + 0.12, 0]}
                 center
                 distanceFactor={9}
                 zIndexRange={[15, 0]}
+                occlude={false}
                 style={{ pointerEvents: "none" }}
               >
                 <span

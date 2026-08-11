@@ -13,9 +13,6 @@ import {
   type Project3DConfig,
   type ProjectUnit,
 } from "@/data/project3d";
-import { ArchitecturalMassing } from "./ArchitecturalMassing";
-import { FloorPlate3D } from "./FloorPlate3D";
-import { HotspotMarkers } from "./HotspotMarkers";
 import { PlanSVG } from "./PlanSVG";
 import { RenderViewer } from "./RenderViewer";
 import { usePerfFlags } from "./useClientFlags";
@@ -23,10 +20,14 @@ import { useCanvasActive } from "./useCanvasActive";
 import type { SalesStage } from "./SalesCenterScene";
 import styles from "./DigitalSalesCenter.module.css";
 
-const SalesCenterScene = dynamic(
-  () => import("./SalesCenterScene").then((m) => m.SalesCenterScene),
-  { ssr: false, loading: () => <div className={styles.canvasLoading} /> },
-);
+/**
+ * Todo el 3D detrás de una sola importación dinámica: Three.js y drei no
+ * entran al bundle de la ficha, se descargan al acercarse la sección.
+ */
+const SalesCenterCanvas = dynamic(() => import("./SalesCenterCanvas"), {
+  ssr: false,
+  loading: () => <div className={styles.canvasLoading} />,
+});
 
 type Props = {
   config: Project3DConfig;
@@ -49,7 +50,7 @@ const STATUS_LABEL: Record<ProjectUnit["status"], string> = {
  */
 export function DigitalSalesCenter({ config, projectName }: Props) {
   const rootRef = useRef<HTMLElement>(null);
-  const { reducedMotion, lite, webglOk } = usePerfFlags();
+  const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
 
   const { mounted, active } = useCanvasActive(rootRef);
   const [stage, setStage] = useState<SalesStage>("building");
@@ -375,46 +376,26 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
         {/* ---------- Escena central ---------- */}
         <div className={styles.stage} data-cursor={lite ? undefined : "Explorar"}>
           {mounted && canRender3D ? (
-            <SalesCenterScene
+            <SalesCenterCanvas
               config={config}
               stage={stage}
-              focusFloor={selectedFloor}
+              tier={tier}
+              touch={touch}
               lite={lite}
               active={active && !viewerRoom}
               onContextLost={() => setContextLost(true)}
-            >
-              {stage === "unit" && plan ? (
-                <FloorPlate3D
-                  plan={plan}
-                  morph={morph}
-                  activeRoomId={activeRoomId}
-                  onHoverRoom={setActiveRoomId}
-                  onSelectRoom={handleSelectRoom}
-                  lite={lite}
-                />
-              ) : (
-                <>
-                  <ArchitecturalMassing
-                    config={config}
-                    lite={lite}
-                    highlightedFloor={selectedFloor}
-                    hoveredFloor={hoveredFloor}
-                    onHoverFloor={setHoveredFloor}
-                    onSelectFloor={selectFloor}
-                    dimOthers={selectedFloor != null}
-                    extract={extractTarget}
-                  />
-                  {/* Hotspots de espacios comunes — abren su render real */}
-                  {!lite && stage === "building" && (
-                    <HotspotMarkers
-                      hotspots={config.hotspots}
-                      activeId={null}
-                      onSelect={openCommonRender}
-                    />
-                  )}
-                </>
-              )}
-            </SalesCenterScene>
+              selectedFloor={selectedFloor}
+              hoveredFloor={hoveredFloor}
+              onHoverFloor={setHoveredFloor}
+              onSelectFloor={selectFloor}
+              extractTarget={extractTarget}
+              onSelectHotspot={openCommonRender}
+              plan={plan}
+              morph={morph}
+              activeRoomId={activeRoomId}
+              onHoverRoom={setActiveRoomId}
+              onSelectRoom={handleSelectRoom}
+            />
           ) : (
             <div className={styles.fallback}>
               <p>

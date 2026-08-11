@@ -9,7 +9,8 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  height: 100dvh;
+  /* svh evita el salto al aparecer/ocultarse la barra del navegador móvil */
+  height: 100svh;
   display: grid;
   grid-template-columns: 1fr;
   overflow: hidden;
@@ -143,6 +144,14 @@
   }
 }
 
+/* En móvil el recorrido pinneado se acorta: 320vh son más de dos viewports
+   de scroll retenido, que en teléfono se siente interminable. */
+@media (max-width: 899px) {
+  .root {
+    height: 200vh;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .root {
     height: auto;
@@ -151,6 +160,6 @@
   .sticky {
     position: relative;
     height: auto;
-    min-height: 100vh;
+    min-height: 100svh;
   }
 }

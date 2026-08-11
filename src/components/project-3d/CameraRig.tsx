@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import type { CameraWaypoint } from "@/data/project3d";
 
@@ -10,10 +10,13 @@ type Props = {
   overview: CameraWaypoint;
   detail: CameraWaypoint;
   /**
-   * Tras la intro: 0 = overview, 1 = detail.
-   * Vinculado al scroll del hero / story.
+   * Progreso de scroll 0→1 leído por REFERENCIA.
+   *
+   * Pasarlo como prop obligaba a re-renderizar el árbol React en cada
+   * paso de scroll; leerlo acá desde un ref permite que el scroll mueva
+   * la cámara a 60fps sin que React reconcilie una sola vez.
    */
-  progress?: number;
+  progressRef?: RefObject<number>;
   enablePointerParallax?: boolean;
   /** Duración de la intro en ms */
   introDuration?: number;
@@ -38,7 +41,7 @@ export function CameraRig({
   intro,
   overview,
   detail,
-  progress = 0,
+  progressRef,
   enablePointerParallax = true,
   introDuration = 2800,
 }: Props) {
@@ -81,7 +84,7 @@ export function CameraRig({
 
   useFrame((_, delta) => {
     if (introDone.current) {
-      const p = Math.min(1, Math.max(0, progress));
+      const p = Math.min(1, Math.max(0, progressRef?.current ?? 0));
       const pos = lerpVec(overview.position, detail.position, p);
       const look = lerpVec(overview.target, detail.target, p);
       targetPos.current.set(...pos);

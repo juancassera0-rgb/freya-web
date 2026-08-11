@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import type { QualityTier } from "./AdaptiveQuality";
 
 function subscribeMedia(query: string, onStoreChange: () => void) {
   const mql = window.matchMedia(query);
@@ -53,6 +54,11 @@ function getLowPowerSnapshot() {
   return cores <= 4 || (typeof mem === "number" && mem <= 4);
 }
 
+function getCoresSnapshot() {
+  if (typeof navigator === "undefined") return 8;
+  return navigator.hardwareConcurrency ?? 8;
+}
+
 function subscribeNoop() {
   return () => {};
 }
@@ -71,14 +77,31 @@ export function usePerfFlags() {
   const narrow = useMediaQuery("(max-width: 720px)");
   const webglOk = useWebGLAvailable(true);
   const lowPower = useLowPowerDevice(false);
+  const cores = useSyncExternalStore(subscribeNoop, getCoresSnapshot, () => 8);
+
+  const mobile = coarse || narrow;
+
+  /**
+   * Tres niveles de calidad. Sólo afectan resolución, sombras y detalle
+   * secundario — la volumetría y la identidad visual son las mismas en
+   * los tres, para que el edificio se lea igual en cualquier dispositivo.
+   */
+  const tier: QualityTier = lowPower
+    ? "low"
+    : mobile
+      ? "medium"
+      : cores >= 8
+        ? "high"
+        : "medium";
 
   return {
     reducedMotion,
     /** Modo reducido: móvil, puntero grueso o hardware limitado */
-    lite: coarse || narrow || lowPower,
-    /** Táctil: cambia los controles de órbita y desactiva hover */
+    lite: mobile || lowPower,
+    /** Táctil: cambia controles de órbita, encuadres y desactiva hover */
     touch: coarse,
     lowPower,
+    tier,
     webglOk,
   };
 }

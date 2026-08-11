@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import type { Project3DConfig } from "@/data/project3d";
 
@@ -9,6 +9,11 @@ type Props = {
   config: Project3DConfig;
   /** 0 = compacto, 1 = pisos separados (vista explotada) */
   explode?: number;
+  /**
+   * Alternativa a `explode` leída por referencia: permite que el scroll
+   * mueva la vista explotada a 60fps sin re-renderizar React.
+   */
+  explodeRef?: RefObject<number>;
   highlightedFloor?: number | null;
   selectedUnitId?: string | null;
   dimOthers?: boolean;
@@ -52,6 +57,7 @@ const COL = {
 export function ArchitecturalMassing({
   config,
   explode = 0,
+  explodeRef,
   highlightedFloor = null,
   selectedUnitId = null,
   dimOthers = false,
@@ -63,8 +69,11 @@ export function ArchitecturalMassing({
 }: Props) {
   const group = useRef<THREE.Group>(null);
   const slabRefs = useRef<Map<number, THREE.Group>>(new Map());
-  /** Valor interpolado de extracción — vive en ref, no dispara re-render */
+  const crownRef = useRef<THREE.Group>(null);
+  const parapetRef = useRef<THREE.Mesh>(null);
+  /** Valores interpolados — viven en refs, no disparan re-render */
   const extractNow = useRef(0);
+  const explodeNow = useRef(explode);
 
   // Niveles con balcón: el último es penthouse retirado
   const floors = config.schematicFloors;
@@ -120,37 +129,48 @@ export function ArchitecturalMassing({
     [],
   );
 
-  const floorY = (level: number) =>
-    GROUND_H + (level - 0.5) * FLOOR_H + explode * 0.3 * (level - 1);
-
-  /* ---------- Animación interna: sin setState por frame ---------- */
-  useFrame((state, delta) => {
-    // Interpola la extracción hacia el objetivo con amortiguación estable
-    const k = 1 - Math.exp(-3.2 * Math.min(delta, 0.1));
-    extractNow.current += (extract - extractNow.current) * k;
-
-    // Aplica el desplazamiento sólo a la losa destacada
-    const active = highlightedFloor;
-    slabRefs.current.forEach((node, level) => {
-      const isActive = active === level;
-      const e = isActive ? extractNow.current : 0;
-      node.position.z = e * 1.05;
-      node.position.y = floorY(level) + e * 0.2;
-    });
-
-    // Presencia mínima — se detiene cuando hay un piso seleccionado
-    if (group.current) {
-      const idle = active == null;
-      const target = idle
-        ? Math.sin(state.clock.elapsedTime * 0.055) * 0.014
-        : 0;
-      group.current.rotation.y +=
-        (target - group.current.rotation.y) * (1 - Math.exp(-1.8 * delta));
-    }
-  });
+  const floorY = (level: number, ex: number) =>
+    GROUND_H + (level - 0.5) * FLOOR_H + ex * 0.3 * (level - 1);
 
   const towerH = towerFloors * FLOOR_H;
   const totalH = GROUND_H + floors * FLOOR_H;
+
+  /* ---------- Animación interna: sin setState por frame ---------- */
+  useFrame((state, delta) => {
+    const d = Math.min(delta, 0.1);
+    const k = 1 - Math.exp(-3.2 * d);
+
+    extractNow.current += (extract - extractNow.current) * k;
+
+    // El scroll puede alimentar explode por ref (continuo) o por prop
+    const explodeTarget = explodeRef?.current ?? explode;
+    explodeNow.current += (explodeTarget - explodeNow.current) * k;
+    const ex = explodeNow.current;
+
+    const active = highlightedFloor;
+    slabRefs.current.forEach((node, level) => {
+      const e = active === level ? extractNow.current : 0;
+      node.position.z = e * 1.05;
+      node.position.y = floorY(level, ex) + e * 0.2;
+    });
+
+    // El penthouse y el remate acompañan la separación
+    if (crownRef.current) {
+      crownRef.current.position.y = GROUND_H + towerH + ex * 0.3 * towerFloors;
+    }
+    if (parapetRef.current) {
+      parapetRef.current.position.y =
+        GROUND_H + towerH + FLOOR_H + 0.16 + ex * 0.3 * towerFloors;
+    }
+
+    // Presencia mínima — se detiene cuando hay un piso seleccionado
+    if (group.current) {
+      const target =
+        active == null ? Math.sin(state.clock.elapsedTime * 0.055) * 0.014 : 0;
+      group.current.rotation.y +=
+        (target - group.current.rotation.y) * (1 - Math.exp(-1.8 * d));
+    }
+  });
 
   return (
     <group ref={group}>
@@ -233,7 +253,7 @@ export function ArchitecturalMassing({
               if (node) slabRefs.current.set(level, node);
               else slabRefs.current.delete(level);
             }}
-            position={[0, floorY(level), 0]}
+            position={[0, floorY(level, explode), 0]}
           >
             {/* Captura de hover/click del nivel */}
             {onSelectFloor ? (
@@ -241,6 +261,12 @@ export function ArchitecturalMassing({
                 geometry={geo.pick}
                 position={[0, FLOOR_H * 0.35, D * 0.1]}
                 visible={false}
+                /* En táctil no hay hover: el primer contacto ya marca el
+                   nivel para que el usuario vea cuál va a seleccionar. */
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  onHoverFloor?.(level);
+                }}
                 onPointerOver={(e) => {
                   e.stopPropagation();
                   onHoverFloor?.(level);
@@ -347,7 +373,7 @@ export function ArchitecturalMassing({
       {/* ==========================================================
           PENTHOUSE — retiro superior con parapeto y vegetación
           ========================================================== */}
-      <group position={[0, GROUND_H + towerH + explode * 0.3 * towerFloors, 0]}>
+      <group ref={crownRef} position={[0, GROUND_H + towerH, 0]}>
         {/* Volumen retirado respecto de la línea de fachada */}
         <mesh
           position={[0, FLOOR_H * 0.5, -D * 0.14]}
@@ -383,11 +409,8 @@ export function ArchitecturalMassing({
 
       {/* Parapeto / sala de máquinas — remate macizo escalonado */}
       <mesh
-        position={[
-          -W * 0.1,
-          GROUND_H + towerH + FLOOR_H + 0.16 + explode * 0.3 * towerFloors,
-          -D * 0.2,
-        ]}
+        ref={parapetRef}
+        position={[-W * 0.1, GROUND_H + towerH + FLOOR_H + 0.16, -D * 0.2]}
         castShadow
         receiveShadow
       >

@@ -178,8 +178,10 @@
 }
 
 @media (max-width: 899px) {
+  /* Recorrido más corto en teléfono: el relato se lee igual pero sin
+     retener el scroll durante tres viewports. */
   .root {
-    height: 330vh;
+    height: 240vh;
   }
 
   .overlay {

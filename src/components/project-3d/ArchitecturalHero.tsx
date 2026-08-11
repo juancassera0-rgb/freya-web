@@ -8,15 +8,15 @@ import { MagneticCTA } from "@/components/experience/MagneticCTA";
 import { useScrollProgress } from "@/components/experience/useScrollProgress";
 import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
-import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { usePerfFlags } from "./useClientFlags";
 import { useCanvasActive } from "./useCanvasActive";
 import styles from "./ArchitecturalHero.module.css";
 
-const Project3DScene = dynamic(
-  () => import("./Project3DScene").then((m) => m.Project3DScene),
-  { ssr: false, loading: () => <div className={styles.canvasFallback} /> },
-);
+/** Three.js queda fuera del bundle de la home hasta que hace falta */
+const MassingCanvas = dynamic(() => import("./MassingCanvas"), {
+  ssr: false,
+  loading: () => <div className={styles.canvasFallback} />,
+});
 
 type Props = {
   project: Project;
@@ -33,9 +33,10 @@ type Props = {
  */
 export function ArchitecturalHero({ project, config, zones }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
-  const { reducedMotion, lite, webglOk } = usePerfFlags();
+  const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
   const enabled = !reducedMotion && webglOk;
-  const { progress } = useScrollProgress(sectionRef, { enabled, steps: 60 });
+  /* El 3D lee el progreso continuo por ref; React no re-renderiza al scrollear */
+  const { rawRef } = useScrollProgress(sectionRef, { enabled, steps: 1 });
   const { active } = useCanvasActive(sectionRef, { rootMargin: "0px" });
 
   const year = new Date().getFullYear();
@@ -50,16 +51,16 @@ export function ArchitecturalHero({ project, config, zones }: Props) {
         {/* Capa 3D */}
         <div className={styles.stage} aria-hidden={enabled ? undefined : true}>
           {enabled ? (
-            <Project3DScene
+            <MassingCanvas
               config={config}
               variant="hero"
-              cameraProgress={progress}
-              performanceMode={lite ? "lite" : "full"}
+              cameraProgressRef={rawRef}
+              lite={lite}
+              tier={tier}
+              touch={touch}
               enablePointerParallax={!lite}
               active={active}
-            >
-              <ArchitecturalMassing config={config} lite={lite} />
-            </Project3DScene>
+            />
           ) : (
             <div
               className={styles.poster}

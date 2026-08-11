@@ -542,6 +542,19 @@
 
   .crumb {
     flex-shrink: 0;
+    min-height: 44px;
+  }
+
+  /* Áreas táctiles de 44px mínimo en todos los controles del explorador */
+  .floorBtn,
+  .unitBtn,
+  .roomBtn,
+  .backBtn {
+    min-height: 44px;
+  }
+
+  .morphSlider {
+    height: 44px;
   }
 
   .stage {
