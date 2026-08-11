@@ -7,6 +7,10 @@ import { Suspense, useEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { WebGLGuard } from "./WebGLGuard";
 import { AdaptiveQuality, type QualityTier } from "./AdaptiveQuality";
+import { SkyDome } from "./SkyDome";
+import { SiteContext } from "./SiteContext";
+import { ProceduralEnvironment } from "./ProceduralEnvironment";
+import { BRAND, MOOD, SITE } from "./sceneTokens";
 
 export type SalesStage = "building" | "floor" | "unit";
 
@@ -203,47 +207,59 @@ export function SalesCenterScene({
       }}
       style={{ width: "100%", height: "100%", display: "block" }}
     >
-      <color attach="background" args={["#f0eee8"]} />
-      <fog attach="fog" args={["#f0eee8", 14, 32]} />
+      <color attach="background" args={[SITE.skyHorizonDay]} />
+      <fog attach="fog" args={[SITE.skyHorizonDay, MOOD.day.fogNear, MOOD.day.fogFar]} />
+
+      {/* En la etapa de unidad se aísla la planta: sin cielo ni entorno,
+          para leer la distribución sin distracciones. */}
+      {!isUnit && <SkyDome mood="day" clouds={!low} />}
+      {!low && <ProceduralEnvironment mood="day" />}
 
       {/* Luz clave — única que proyecta sombra */}
       <directionalLight
         castShadow={!low}
         position={[6, 9, 4]}
-        intensity={1.7}
-        color="#fff6e8"
+        intensity={MOOD.day.keyIntensity}
+        color={MOOD.day.key}
         shadow-mapSize={high ? [1024, 1024] : [512, 512]}
         shadow-bias={-0.0015}
       >
-        <orthographicCamera attach="shadow-camera" args={[-7, 7, 7, -7, 0.5, 24]} />
+        <orthographicCamera attach="shadow-camera" args={[-8, 8, 8, -8, 0.5, 26]} />
       </directionalLight>
 
       {/* Relleno y rim: sin sombra, coste despreciable */}
-      <directionalLight position={[-5, 4, -3]} intensity={0.24} color="#aab6c4" />
+      <directionalLight position={[-5, 4, -3]} intensity={0.24} color={MOOD.day.fill} />
       {!low && (
-        <directionalLight position={[-2, 2.5, 5]} intensity={0.2} color="#e8dcc4" />
+        <directionalLight position={[-2, 2.5, 5]} intensity={0.2} color={MOOD.day.fill} />
       )}
-      <ambientLight intensity={low ? 0.46 : 0.34} color="#e4ded0" />
-      <hemisphereLight args={["#f4f1e8", "#e6e3d8", 0.45]} />
+      <ambientLight
+        intensity={low ? 0.46 : MOOD.day.ambientIntensity}
+        color={MOOD.day.ambient}
+      />
+      <hemisphereLight args={[SITE.skyHorizonDay, SITE.grass, 0.42]} />
 
-      {!isUnit && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow={!low}>
+      {/* Emplazamiento urbano — sólo con el edificio en escena */}
+      {!isUnit && <SiteContext mood="day" detail={tier} />}
+
+      {/* Piso neutro para la planta aislada */}
+      {isUnit && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow={!low}>
           <planeGeometry args={[28, 28]} />
-          <meshStandardMaterial color="#e6e3d8" roughness={1} />
+          <meshStandardMaterial color={SITE.sidewalk} roughness={1} />
         </mesh>
       )}
 
       {/* ContactShadows con frames finitos: se calcula y se congela */}
       {!low && (
         <ContactShadows
-          position={[0, isUnit ? -0.04 : 0.005, 0]}
+          position={[0, isUnit ? -0.06 : 0.062, 0]}
           opacity={0.32}
           scale={isUnit ? 8 : 15}
           blur={2.6}
           far={5}
           resolution={high ? 512 : 256}
           frames={60}
-          color="#1d1c1b"
+          color={BRAND.offBlack}
         />
       )}
 

@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import type { Project3DConfig } from "@/data/project3d";
+import { BRAND, SITE } from "./sceneTokens";
 
 type Props = {
   config: Project3DConfig;
@@ -40,18 +41,21 @@ const CANTILEVER = 0.3; // vuelo del balcón sobre la línea de vidrio
 const RAIL_H = 0.13;
 const PARTY_EXTRA = 0.55; // la medianera sobrepasa la última losa
 
-/** Paleta leída de los renders */
+/**
+ * Paleta del edificio. Todos los tonos salen de sceneTokens, o sea de los
+ * tres colores del manual de marca — no hay hex sueltos acá.
+ */
 const COL = {
-  stucco: "#efece4", // medianera / parapetos
-  slabFascia: "#cfc3ac", // frente de losa, tono arena
-  soffit: "#e0d6c2", // intradós del balcón
-  glass: "#4a5a68", // vidriado azul-gris
-  glassLit: "#e8c89a", // vidrio con luz interior cálida
-  mullion: "#3a3832",
-  rail: "#b9c6c4", // baranda de vidrio
-  ground: "#b9b2a4",
-  green: "#6d7a52", // vegetación del retiro
-  accent: "#4f4c37",
+  stucco: SITE.stucco,
+  slabFascia: SITE.slabFascia,
+  soffit: SITE.soffit,
+  glass: SITE.glass,
+  glassLit: SITE.glassLit,
+  mullion: SITE.mullion,
+  rail: SITE.rail,
+  ground: SITE.groundFloor,
+  green: SITE.foliage,
+  accent: BRAND.camo,
 };
 
 export function ArchitecturalMassing({
@@ -95,10 +99,14 @@ export function ArchitecturalMassing({
       stucco: make(COL.stucco, 0.92),
       fascia: make(COL.slabFascia, 0.78),
       soffit: make(COL.soffit, 0.85),
-      glass: make(COL.glass, 0.08, {
-        metalness: 0.62,
+      /* Vidrio: rugosidad casi nula + metalness alto para que tome el
+         reflejo del cielo desde el env map procedural. Sin ese reflejo
+         el vidriado se lee como plástico. */
+      glass: make(COL.glass, 0.04, {
+        metalness: 0.86,
+        envMapIntensity: 1.35,
         transparent: true,
-        opacity: 0.72,
+        opacity: 0.78,
       }),
       mullion: make(COL.mullion, 0.45, { metalness: 0.35 }),
       rail: make(COL.rail, 0.06, {
@@ -287,10 +295,11 @@ export function ArchitecturalMassing({
             >
               <meshStandardMaterial
                 color={emphasised ? COL.glassLit : COL.glass}
-                roughness={0.08}
-                metalness={0.6}
+                roughness={0.04}
+                metalness={emphasised ? 0.4 : 0.86}
+                envMapIntensity={1.35}
                 transparent
-                opacity={dimmed ? 0.14 : emphasised ? 0.85 : 0.72}
+                opacity={dimmed ? 0.14 : emphasised ? 0.9 : 0.78}
               />
             </mesh>
 

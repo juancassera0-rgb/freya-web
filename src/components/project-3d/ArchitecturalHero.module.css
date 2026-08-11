@@ -31,6 +31,9 @@
   filter: grayscale(0.3) brightness(0.55);
 }
 
+/* Scrim de legibilidad. Se aligeró arriba para dejar ver el cielo del
+   atardecer; abajo se mantiene fuerte porque ahí está el resplandor del
+   horizonte y el texto es claro. */
 .vignette {
   position: absolute;
   inset: 0;
@@ -38,10 +41,10 @@
   background:
     linear-gradient(
       to bottom,
-      color-mix(in srgb, var(--dark) 72%, transparent) 0%,
-      transparent 28%,
-      transparent 58%,
-      color-mix(in srgb, var(--dark) 88%, transparent) 100%
+      color-mix(in srgb, var(--dark) 46%, transparent) 0%,
+      transparent 26%,
+      transparent 52%,
+      color-mix(in srgb, var(--dark) 82%, transparent) 100%
     );
 }
 
