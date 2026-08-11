@@ -303,3 +303,97 @@
     max-width: 52rem;
   }
 }
+
+/* ============================================================
+   Narrativa editorial de ficha (rediseño)
+   ============================================================ */
+
+.narrative {
+  padding-block: clamp(4rem, 9vw, 8rem);
+  background: var(--bg);
+}
+
+.narrativeGrid {
+  display: grid;
+  gap: 1.5rem;
+  padding-block: clamp(2rem, 4vw, 3.25rem);
+  border-top: 1px solid var(--line);
+}
+
+.narrativeLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.narrativeLead {
+  margin: 0;
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  line-height: 1.45;
+  font-weight: 300;
+  color: var(--ink);
+  max-width: 46ch;
+  text-wrap: pretty;
+}
+
+.narrativeBody {
+  margin: 1.25rem 0 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 52ch;
+}
+
+.highlightList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0;
+  list-style: none;
+  margin: clamp(2rem, 4vw, 3rem) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.highlightList li {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 1.35rem 1.25rem 1.35rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.highlightIndex {
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  color: var(--accent);
+  padding-top: 0.2rem;
+}
+
+.galleryTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-headline);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.022em;
+  text-transform: uppercase;
+  margin: 0.5rem 0 0;
+}
+
+@media (min-width: 900px) {
+  .narrativeGrid {
+    grid-template-columns: minmax(0, 0.3fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 5rem);
+  }
+
+  .narrativeLabel {
+    flex-direction: column;
+    align-items: start;
+    gap: 0.35rem;
+  }
+}

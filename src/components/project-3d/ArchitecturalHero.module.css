@@ -1,0 +1,311 @@
+.root {
+  position: relative;
+  height: 260vh;
+  background: var(--dark);
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--dark);
+}
+
+.stage,
+.canvasFallback {
+  position: absolute;
+  inset: 0;
+}
+
+.canvasFallback {
+  background: var(--dark);
+}
+
+.poster {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(0.3) brightness(0.55);
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--dark) 72%, transparent) 0%,
+      transparent 28%,
+      transparent 58%,
+      color-mix(in srgb, var(--dark) 88%, transparent) 100%
+    );
+}
+
+/* Retícula estructural — dibujo técnico de fondo */
+.gridLines {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  pointer-events: none;
+  padding-inline: var(--gutter);
+  opacity: 0.14;
+}
+
+.gridLines span {
+  border-left: 1px solid var(--off-white);
+}
+
+.gridLines span:last-child {
+  border-right: 1px solid var(--off-white);
+}
+
+.ui {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: calc(var(--header-h) + 1.75rem) var(--gutter) 2rem;
+  color: var(--off-white);
+  pointer-events: none;
+}
+
+.ui a,
+.ui button {
+  pointer-events: auto;
+}
+
+/* --- Meta superior --- */
+.topMeta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wordmark {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+}
+
+.metaLine {
+  display: block;
+  font-size: var(--fs-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--off-white) 62%, transparent);
+}
+
+/* --- Headline --- */
+.headlineBlock {
+  display: flex;
+  align-items: center;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-size: var(--fs-mega);
+  font-weight: 500;
+  line-height: 0.88;
+  letter-spacing: var(--tracking-mega);
+  text-transform: uppercase;
+  margin: 0;
+  max-width: 14ch;
+  text-wrap: balance;
+}
+
+/* --- Meta inferior --- */
+.bottomMeta {
+  display: grid;
+  gap: 1.75rem;
+  align-items: end;
+}
+
+.focusCard {
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 1rem;
+  border-left: 1px solid color-mix(in srgb, var(--off-white) 32%, transparent);
+}
+
+.focusLabel {
+  font-size: var(--fs-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--copper);
+  filter: brightness(2.1);
+}
+
+.focusName {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  transition: opacity var(--dur-fast) var(--ease-arch);
+}
+
+.focusName:hover {
+  opacity: 0.62;
+}
+
+.focusPlace {
+  font-size: var(--fs-meta);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--off-white) 58%, transparent);
+}
+
+.specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.25rem;
+  margin: 0;
+}
+
+.specs div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.specs dt {
+  font-size: var(--fs-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--off-white) 52%, transparent);
+}
+
+.specs dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+}
+
+.actions :global(a[data-variant="ghost"]) {
+  color: var(--off-white);
+}
+
+/* --- Scroll hint --- */
+.scrollHint {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 2rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.scrollLabel {
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--off-white) 55%, transparent);
+  writing-mode: vertical-rl;
+}
+
+.scrollBar {
+  width: 1px;
+  height: 3.5rem;
+  background: color-mix(in srgb, var(--off-white) 28%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+.scrollBar::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 45%;
+  background: var(--off-white);
+  animation: scrollPulse 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes scrollPulse {
+  0% { transform: translateY(-100%); }
+  60%, 100% { transform: translateY(240%); }
+}
+
+.badge {
+  position: absolute;
+  left: var(--gutter);
+  bottom: 2rem;
+  z-index: 3;
+  max-width: 22rem;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--off-white) 45%, transparent);
+  margin: 0;
+}
+
+@media (min-width: 900px) {
+  .bottomMeta {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "focus specs"
+      "actions actions";
+    gap: 2.5rem 3rem;
+  }
+
+  .focusCard { grid-area: focus; }
+  .specs { grid-area: specs; justify-content: end; }
+  .actions { grid-area: actions; }
+}
+
+@media (max-width: 899px) {
+  .root {
+    height: 200vh;
+  }
+
+  .gridLines {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .badge {
+    position: static;
+    margin-top: 1.25rem;
+    max-width: none;
+  }
+
+  .scrollHint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    height: auto;
+  }
+
+  .sticky {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .scrollBar::after {
+    animation: none;
+  }
+}

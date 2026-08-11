@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project3DConfig, ProjectUnit } from "@/data/project3d";
 import { getUnitsForFloor } from "@/data/project3d";
-import { BuildingPlaceholder } from "./BuildingPlaceholder";
+import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { HotspotMarkers } from "./HotspotMarkers";
 import { ApartmentViewer } from "./ApartmentViewer";
 import { usePerfFlags } from "./useClientFlags";
@@ -109,7 +109,7 @@ export function BuildingExplorer({ config, projectName }: Props) {
       className={styles.root}
       aria-label={`Explorador 3D — ${projectName}`}
     >
-      <div className={styles.stage}>
+      <div className={styles.stage} data-cursor={lite ? undefined : "Orbitar"}>
         {showCanvas ? (
           <Project3DScene
             config={config}
@@ -119,12 +119,13 @@ export function BuildingExplorer({ config, projectName }: Props) {
             enablePointerParallax={false}
           >
             {config.status === "placeholder" || !config.modelUrl ? (
-              <BuildingPlaceholder
+              <ArchitecturalMassing
                 config={config}
                 highlightedFloor={selectedFloor}
-                exploded={exploded}
+                explode={exploded ? 1 : 0}
                 selectedUnitId={selectedUnitId}
                 dimOthers={Boolean(selectedFloor || selectedUnitId)}
+                lite={lite}
               />
             ) : null}
             {!lite && (

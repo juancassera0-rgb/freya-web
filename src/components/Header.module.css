@@ -363,6 +363,94 @@
   color: #c4b79a;
 }
 
+/* Columnas laterales del overlay — proyectos + contacto */
+.overlayAside {
+  display: grid;
+  gap: 2rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid rgba(246, 246, 246, 0.14);
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  transition:
+    opacity var(--dur-med) var(--ease-out),
+    transform var(--dur-med) var(--ease-out);
+}
+
+.overlay[data-open="true"] .overlayAside {
+  opacity: 1;
+  transform: none;
+  transition-delay: 380ms;
+}
+
+.overlayCol {
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+}
+
+.overlayColLabel {
+  margin: 0;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c4b79a;
+}
+
+.overlayProjects {
+  display: grid;
+  gap: 0.85rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.overlayProject {
+  display: grid;
+  gap: 0.15rem;
+  transition: opacity var(--dur-fast) var(--ease-arch);
+}
+
+.overlayProject:hover {
+  opacity: 0.65;
+}
+
+.overlayProjectName {
+  font-size: 1rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.overlayProjectMeta {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(246, 246, 246, 0.5);
+}
+
+.overlayContact {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--off-white);
+  border-bottom: 1px solid rgba(246, 246, 246, 0.3);
+  padding-bottom: 0.15rem;
+  justify-self: start;
+  transition: border-color var(--dur-fast) ease;
+}
+
+.overlayContact:hover {
+  border-bottom-color: #c4b79a;
+}
+
+.overlayContactMeta {
+  margin: 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(246, 246, 246, 0.5);
+}
+
 .overlayMeta {
   margin-top: 0.5rem;
   padding-top: 1.25rem;
@@ -402,8 +490,14 @@
   }
 
   .overlayLink {
-    font-size: clamp(2rem, 4.2vw, 3rem);
-    padding-block: 1.1rem;
+    font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+    padding-block: 1.15rem;
+    letter-spacing: -0.02em;
+  }
+
+  .overlayAside {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 3rem;
   }
 }
 

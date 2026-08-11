@@ -1,21 +1,91 @@
 .page {
-  overflow: hidden;
+  padding-top: 0;
 }
 
-.block {
-  margin-top: 3.25rem;
-  padding-top: 2rem;
+/* --- Masthead editorial --- */
+.masthead {
+  padding-block: calc(var(--header-h) + clamp(3.5rem, 8vw, 7rem))
+    clamp(2.5rem, 5vw, 4rem);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.mastheadTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-mega);
+  font-weight: 500;
+  line-height: 0.88;
+  letter-spacing: var(--tracking-mega);
+  text-transform: uppercase;
+  margin: 0.5rem 0 0;
+}
+
+.mastheadLead {
+  margin: 1.5rem 0 0;
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  line-height: 1.55;
+  font-weight: 300;
+  color: var(--ink-soft);
+  max-width: 40ch;
+}
+
+.mastheadSpecs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1.5rem;
+  margin: clamp(2.5rem, 5vw, 4rem) 0 0;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--line);
 }
 
-.block h2 {
-  margin-bottom: 0.35rem;
-  font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+.mastheadSpecs div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.mastheadSpecs dt {
+  font-size: var(--fs-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mastheadSpecs dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.8vw, 1.4rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+/* --- Bloques de proyectos --- */
+.block {
+  padding-block: clamp(3rem, 7vw, 6rem) 0;
+}
+
+.blockHead {
+  display: grid;
+  gap: 0.6rem;
+  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.blockTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-headline);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -0.022em;
+  text-transform: uppercase;
+  margin: 0;
 }
 
 .blockLead {
-  color: var(--ink-soft);
-  font-weight: 300;
-  max-width: 36rem;
-  margin-bottom: 1.25rem;
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 44ch;
 }

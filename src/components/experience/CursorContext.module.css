@@ -1,0 +1,39 @@
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  mix-blend-mode: difference;
+}
+
+.ring {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #f6f6f6;
+  background: #f6f6f6;
+  transition:
+    width var(--dur-fast) var(--ease-arch),
+    height var(--dur-fast) var(--ease-arch),
+    background var(--dur-fast) var(--ease-arch);
+}
+
+.cursor[data-label="true"] .ring {
+  width: 4.6rem;
+  height: 4.6rem;
+  background: transparent;
+  border-color: #f6f6f6;
+}
+
+.label {
+  position: absolute;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f6f6f6;
+  white-space: nowrap;
+}

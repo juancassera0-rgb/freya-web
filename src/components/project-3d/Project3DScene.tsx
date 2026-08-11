@@ -57,7 +57,7 @@ export function Project3DScene({
         near: 0.1,
         far: 60,
       }}
-      shadows={!lite ? "soft" : false}
+      shadows={!lite}
       onCreated={({ gl }) => {
         gl.toneMapping = ACESFilmicToneMapping;
         gl.toneMappingExposure = isHero ? 1.08 : 1.15;
@@ -73,11 +73,9 @@ export function Project3DScene({
         position={[6, 9, 4]}
         intensity={isHero ? 1.5 : 1.7}
         color="#fff6e8"
-        shadow-mapSize={lite ? [512, 512] : [1536, 1536]}
+        shadow-mapSize={lite ? [512, 512] : [1024, 1024]}
         shadow-bias={-0.0015}
-      >
-        <orthographicCamera attach="shadow-camera" args={[-6, 6, 6, -6, 0.5, 22]} />
-      </directionalLight>
+      />
       {/* Luz de relleno fría — abre sombras sin aplanar */}
       <directionalLight
         position={[-5, 4, -3]}
@@ -98,14 +96,14 @@ export function Project3DScene({
         <meshStandardMaterial color={ground} roughness={1} />
       </mesh>
 
-      {!lite && (
+      {!lite && !isHero && (
         <ContactShadows
           position={[0, 0.005, 0]}
-          opacity={isHero ? 0.38 : 0.3}
+          opacity={0.28}
           scale={14}
-          blur={2.6}
+          blur={2.4}
           far={4.5}
-          resolution={512}
+          resolution={256}
           color="#1d1c1b"
         />
       )}

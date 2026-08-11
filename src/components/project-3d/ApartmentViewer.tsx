@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ACESFilmicToneMapping } from "three";
 import type { ProjectUnit } from "@/data/project3d";
 import { ApartmentDollhouse } from "./ApartmentDollhouse";
-import { ApartmentPlanSVG } from "./ApartmentPlanSVG";
+import { FloorPlanViewer } from "./FloorPlanViewer";
 import styles from "./ApartmentViewer.module.css";
 
 const Canvas = dynamic(
@@ -67,7 +67,7 @@ export function ApartmentViewer({
 
       <div className={styles.stage} data-mode={mode} key={mode}>
         {mode === "plan" ? (
-          <ApartmentPlanSVG unit={unit} />
+          <FloorPlanViewer unit={unit} />
         ) : (
           <Canvas
             dpr={[1, 1.5]}

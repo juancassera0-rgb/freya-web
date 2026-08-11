@@ -5,6 +5,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { BrandLoader } from "@/components/BrandLoader";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { SiteAtmosphere } from "@/components/SiteAtmosphere";
+import { CursorContext } from "@/components/experience/CursorContext";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
           <Footer />
         </div>
         <WhatsAppButton />
+        <CursorContext />
       </body>
     </html>
   );

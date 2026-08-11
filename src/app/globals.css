@@ -54,17 +54,31 @@
   --space-8: 4.5rem;
   --space-9: 7rem;
   --max: 1140px;
+  /* Ancho editorial ancho — composiciones arquitectónicas full-bleed */
+  --max-wide: 1600px;
+  --gutter: clamp(1.25rem, 4vw, 4.5rem);
   --header-h: 3.5rem;
   /* Sistema de movimiento — OCI (sobriedad) + Illoca (máscaras/stagger) */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-emph: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Movimiento arquitectónico: pesado, deliberado, sin rebote */
+  --ease-arch: cubic-bezier(0.16, 0.84, 0.24, 1);
   --dur-fast: 0.25s;
   --dur-med: 0.55s;
   --dur-slow: 0.9s;
   --dur-hero: 1.2s;
+  --dur-mask: 1.05s;
   --reveal-y: 1.75rem;
   --stagger: 55ms;
+
+  /* Escala tipográfica editorial — titulares que ocupan el viewport */
+  --fs-mega: clamp(3.2rem, 12.5vw, 12rem);
+  --fs-display: clamp(2.6rem, 8vw, 7rem);
+  --fs-headline: clamp(2rem, 5vw, 4rem);
+  --fs-meta: clamp(0.62rem, 0.72vw, 0.72rem);
+  --tracking-meta: 0.2em;
+  --tracking-mega: -0.03em;
 }
 
 *,
@@ -371,4 +385,139 @@ h3 {
 
 .skip-link:focus {
   top: 1rem;
+}
+
+/* ============================================================
+   Sistema editorial arquitectónico
+   ============================================================ */
+
+/* Contenedor ancho para composiciones full-bleed */
+.container-wide {
+  width: min(100% - (var(--gutter) * 2), var(--max-wide));
+  margin-inline: auto;
+}
+
+.bleed {
+  width: 100%;
+  padding-inline: var(--gutter);
+}
+
+/* Titulares de escala extrema */
+.mega {
+  font-family: var(--font-display);
+  font-size: var(--fs-mega);
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: var(--tracking-mega);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Metadata técnica — contrapunto pequeño a los titulares */
+.meta {
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+
+.meta-index {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-meta);
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Regla estructural — línea de dibujo técnico */
+.rule {
+  height: 1px;
+  width: 100%;
+  background: var(--line);
+  border: 0;
+  margin: 0;
+}
+
+/* Fila de metadata tipo ficha técnica */
+.spec-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-5) var(--space-4);
+  padding-block: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.spec-row dt {
+  font-size: var(--fs-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.spec-row dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+/* Enlace con underline animado — microinteracción base */
+.link-underline {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.15em;
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--dur-med) var(--ease-arch);
+}
+
+.link-underline:hover::after,
+.link-underline:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Oculta el cursor nativo cuando el cursor contextual está activo */
+html[data-custom-cursor="true"] {
+  cursor: none;
+}
+
+html[data-custom-cursor="true"] a,
+html[data-custom-cursor="true"] button {
+  cursor: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

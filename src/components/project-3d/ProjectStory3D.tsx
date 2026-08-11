@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
-import { BuildingPlaceholder } from "./BuildingPlaceholder";
+import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { usePerfFlags } from "./useClientFlags";
 import styles from "./ProjectStory3D.module.css";
 
@@ -72,9 +72,11 @@ export function ProjectStory3D({ project, config }: Props) {
               enablePointerParallax={!lite}
               performanceMode={lite ? "lite" : "full"}
             >
-              <BuildingPlaceholder
+              <ArchitecturalMassing
                 config={config}
                 highlightedFloor={highlightFloor}
+                dimOthers={highlightFloor != null}
+                lite={lite}
               />
             </Project3DScene>
           ) : (

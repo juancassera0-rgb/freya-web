@@ -1,0 +1,35 @@
+.wrap {
+  display: block;
+}
+
+.line {
+  display: block;
+  overflow: hidden;
+  /* Evita que las descendentes se recorten */
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+
+.inner {
+  display: block;
+  transform: translate3d(0, 105%, 0);
+  opacity: 0;
+  transition:
+    transform var(--dur-mask) var(--ease-arch),
+    opacity var(--dur-mask) var(--ease-arch);
+  transition-delay: var(--d, 0ms);
+  will-change: transform;
+}
+
+.inner[data-visible="true"] {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inner {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}

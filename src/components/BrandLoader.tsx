@@ -5,44 +5,71 @@ import { FreyaLogo } from "./FreyaLogo";
 import styles from "./BrandLoader.module.css";
 
 const SESSION_KEY = "freya-brand-intro";
+const SHOW_MS = 1200;
+const DONE_MS = 1900;
 
-type Phase = "boot" | "show" | "hide" | "done";
-
-function getInitialPhase(): Phase {
-  if (typeof window === "undefined") return "boot";
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const seen = sessionStorage.getItem(SESSION_KEY) === "1";
-  return reduced || seen ? "done" : "boot";
+function alreadySeen(): boolean {
+  try {
+    if (typeof window === "undefined") return true;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return true;
+    return sessionStorage.getItem(SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
+function markSeen() {
+  try {
+    sessionStorage.setItem(SESSION_KEY, "1");
+  } catch {
+    /* private mode / blocked storage */
+  }
+}
+
+/**
+ * Intro de marca. No debe bloquear la app: si algo falla, se auto-oculta.
+ */
 export function BrandLoader() {
-  const [phase, setPhase] = useState<Phase>(getInitialPhase);
+  const [mounted, setMounted] = useState(false);
+  const [hiding, setHiding] = useState(false);
 
   useEffect(() => {
-    if (phase !== "boot") return;
+    if (alreadySeen()) return;
 
-    // Timers (no setState síncrono en el cuerpo del efecto): arranca la
-    // animación en el siguiente tick, luego hide/done en cascada.
-    const showTimer = window.setTimeout(() => setPhase("show"), 0);
-    const hideTimer = window.setTimeout(() => setPhase("hide"), 1400);
-    const doneTimer = window.setTimeout(() => {
-      sessionStorage.setItem(SESSION_KEY, "1");
-      setPhase("done");
-    }, 2100);
+    let hideTimer = 0;
+    let doneTimer = 0;
+    let safetyTimer = 0;
+
+    // Diferir un frame para no pelear con la hidratación.
+    const startTimer = window.setTimeout(() => {
+      setMounted(true);
+      hideTimer = window.setTimeout(() => setHiding(true), SHOW_MS);
+      doneTimer = window.setTimeout(() => {
+        markSeen();
+        setMounted(false);
+      }, DONE_MS);
+    }, 16);
+
+    // Red de seguridad: nunca más de 3.5s en pantalla.
+    safetyTimer = window.setTimeout(() => {
+      markSeen();
+      setMounted(false);
+    }, 3500);
 
     return () => {
-      window.clearTimeout(showTimer);
+      window.clearTimeout(startTimer);
       window.clearTimeout(hideTimer);
       window.clearTimeout(doneTimer);
+      window.clearTimeout(safetyTimer);
     };
-  }, [phase]);
+  }, []);
 
-  if (phase === "boot" || phase === "done") return null;
+  if (!mounted) return null;
 
   return (
     <div
       className={styles.loader}
-      data-hiding={phase === "hide" ? "true" : "false"}
+      data-hiding={hiding ? "true" : "false"}
       aria-hidden="true"
     >
       <div className={styles.mark}>

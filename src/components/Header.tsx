@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getActiveProjects } from "@/data/projects";
+import { site } from "@/data/site";
 import { FreyaLogo } from "./FreyaLogo";
 import styles from "./Header.module.css";
 
@@ -13,6 +15,8 @@ const links = [
   { href: "/faq", label: "FAQ" },
   { href: "/contacto", label: "Contacto" },
 ];
+
+const featured = getActiveProjects();
 
 export function Header() {
   const pathname = usePathname();
@@ -155,6 +159,42 @@ export function Header() {
               },
             )}
           </nav>
+          <div className={styles.overlayAside}>
+            <div className={styles.overlayCol}>
+              <p className={styles.overlayColLabel}>En comercialización</p>
+              <ul className={styles.overlayProjects}>
+                {featured.map((p) => (
+                  <li key={p.slug}>
+                    <Link
+                      href={`/desarrollos/${p.slug}`}
+                      onClick={() => setOpen(false)}
+                      tabIndex={open ? 0 : -1}
+                      className={styles.overlayProject}
+                    >
+                      <span className={styles.overlayProjectName}>{p.name}</span>
+                      <span className={styles.overlayProjectMeta}>
+                        {p.neighborhood} · {p.typologies}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className={styles.overlayCol}>
+              <p className={styles.overlayColLabel}>Contacto</p>
+              <a
+                className={styles.overlayContact}
+                href={`mailto:${site.contact.email}`}
+                tabIndex={open ? 0 : -1}
+              >
+                {site.contact.email}
+              </a>
+              <p className={styles.overlayContactMeta}>{site.contact.address}</p>
+              <p className={styles.overlayContactMeta}>{site.contact.hours}</p>
+            </div>
+          </div>
+
           <p className={styles.overlayMeta}>Imagined for personalization</p>
         </div>
       </div>
