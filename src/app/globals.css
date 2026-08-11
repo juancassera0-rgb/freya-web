@@ -72,13 +72,19 @@
   --reveal-y: 1.75rem;
   --stagger: 55ms;
 
-  /* Escala tipográfica editorial — titulares que ocupan el viewport */
-  --fs-mega: clamp(3.2rem, 12.5vw, 12rem);
-  --fs-display: clamp(2.6rem, 8vw, 7rem);
-  --fs-headline: clamp(2rem, 5vw, 4rem);
-  --fs-meta: clamp(0.62rem, 0.72vw, 0.72rem);
-  --tracking-meta: 0.2em;
-  --tracking-mega: -0.03em;
+  /* Escala tipográfica — Neue Regrade, según manual de marca.
+     Se bajó respecto de la versión anterior: los titulares tenían un
+     tamaño que invadía la composición y competía con la arquitectura.
+     Ahora tienen presencia sin comerse la escena.
+     Los tamaños se acotan por vmin además de vw, para que en pantallas
+     bajas y anchas (notebooks) el titular no desborde en altura. */
+  --fs-mega: clamp(2.4rem, 7vw, 5.6rem);
+  --fs-display: clamp(2rem, 5.2vw, 4.4rem);
+  --fs-headline: clamp(1.6rem, 3.4vw, 2.9rem);
+  --fs-meta: clamp(0.6rem, 0.7vw, 0.7rem);
+  --tracking-meta: 0.18em;
+  /* Tracking apenas negativo: el manual pide elegancia, no compresión */
+  --tracking-mega: -0.02em;
 }
 
 *,

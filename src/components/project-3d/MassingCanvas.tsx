@@ -12,6 +12,7 @@ type Props = {
   tier: QualityTier;
   touch: boolean;
   lite: boolean;
+  framing?: { distance: number; fov: number; targetY: number };
   active: boolean;
   cameraProgressRef?: RefObject<number>;
   explodeRef?: RefObject<number>;
@@ -34,6 +35,7 @@ export default function MassingCanvas({
   tier,
   touch,
   lite,
+  framing,
   active,
   cameraProgressRef,
   explodeRef,
@@ -50,6 +52,7 @@ export default function MassingCanvas({
       performanceMode={lite ? "lite" : "full"}
       tier={tier}
       touch={touch}
+      framing={framing}
       enablePointerParallax={enablePointerParallax}
       active={active}
     >

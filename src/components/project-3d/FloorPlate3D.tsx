@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { PlanRoom, UnitPlan } from "@/data/planGeometry";
+import { RoomFurniture } from "./RoomFurniture";
 import styles from "./FloorPlate3D.module.css";
 
 type Props = {
@@ -213,6 +214,19 @@ export function FloorPlate3D({
                   opacity={0.55}
                 />
               </mesh>
+            )}
+
+            {/* Mobiliario: aparece cuando los muros empiezan a levantarse,
+                para que la planta se lea habitada y no como un esquema
+                vacío. En gama baja se omite. */}
+            {!lite && morph > 0.3 && (
+              <RoomFurniture
+                room={room}
+                w={w}
+                d={d}
+                visible
+                dim={Boolean(activeRoomId) && !emphasised}
+              />
             )}
 
             {/* Etiqueta del ambiente.

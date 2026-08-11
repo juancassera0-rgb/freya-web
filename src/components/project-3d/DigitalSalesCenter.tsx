@@ -17,6 +17,7 @@ import { PlanSVG } from "./PlanSVG";
 import { RenderViewer } from "./RenderViewer";
 import { usePerfFlags } from "./useClientFlags";
 import { useCanvasActive } from "./useCanvasActive";
+import { FRAMING, useViewportClass } from "./useViewportClass";
 import type { SalesStage } from "./SalesCenterScene";
 import styles from "./DigitalSalesCenter.module.css";
 
@@ -51,6 +52,7 @@ const STATUS_LABEL: Record<ProjectUnit["status"], string> = {
 export function DigitalSalesCenter({ config, projectName }: Props) {
   const rootRef = useRef<HTMLElement>(null);
   const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
+  const framing = FRAMING[useViewportClass()];
 
   const { mounted, active } = useCanvasActive(rootRef);
   const [stage, setStage] = useState<SalesStage>("building");
@@ -382,6 +384,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
               tier={tier}
               touch={touch}
               lite={lite}
+              framing={framing}
               active={active && !viewerRoom}
               onContextLost={() => setContextLost(true)}
               selectedFloor={selectedFloor}

@@ -45,6 +45,25 @@ function shade(base: THREE.Color, amount: number): string {
 }
 
 /**
+ * Sube saturación y luminosidad MANTENIENDO EL MATIZ.
+ *
+ * El Camo es un oliva muy desaturado: perfecto para superficies, pero la
+ * vegetación con ese valor exacto se ve mustia. Esto la trae a la vida sin
+ * salirse de la familia cromática — el tono sigue siendo el de la marca,
+ * sólo con más vida. El hue nunca se toca.
+ */
+function vivify(base: THREE.Color, sat: number, light: number): string {
+  const hsl = { h: 0, s: 0, l: 0 };
+  base.getHSL(hsl);
+  const c = new THREE.Color().setHSL(
+    hsl.h, // matiz de marca intacto
+    Math.min(1, hsl.s + sat),
+    Math.min(0.95, Math.max(0.05, hsl.l + light)),
+  );
+  return `#${c.getHexString()}`;
+}
+
+/**
  * Colores del emplazamiento. Cada entrada documenta de dónde sale.
  */
 export const SITE = {
@@ -54,12 +73,15 @@ export const SITE = {
   skyTopDusk: mix(OFF_BLACK, CAMO, 0.35), // noche cálida con base camo
   skyHorizonDusk: mix(CAMO, OFF_WHITE, 0.62), // resplandor bajo, arena
 
-  /* --- Vegetación: todo derivado de Camo --- */
-  grass: mix(CAMO, OFF_BLACK, 0.12), // oliva apagado, más profundo
-  grassLight: mix(CAMO, OFF_WHITE, 0.18), // borde de cantero, más claro
-  foliage: mix(CAMO, OFF_BLACK, 0.05), // copa de árbol
-  foliageLight: mix(CAMO, OFF_WHITE, 0.24), // copa iluminada por el sol
-  trunk: mix(OFF_BLACK, CAMO, 0.45), // tronco: marrón cálido de marca
+  /* --- Vegetación: matiz del Camo, con vida ---
+     Mismo hue que el color "naturaleza" de la marca, pero con saturación
+     y luz suficientes para que el follaje se lea vivo y no mustio. */
+  grass: vivify(CAMO, 0.14, 0.04), // césped del cantero
+  grassLight: vivify(CAMO, 0.18, 0.13), // borde iluminado
+  foliage: vivify(CAMO, 0.2, 0.06), // copa en sombra
+  foliageMid: vivify(CAMO, 0.26, 0.14), // copa media
+  foliageLight: vivify(CAMO, 0.3, 0.22), // copa al sol
+  trunk: mix(OFF_BLACK, CAMO, 0.5), // tronco: marrón cálido de marca
 
   /* --- Suelo urbano: grises CÁLIDOS desde Off-Black --- */
   sidewalk: mix(OFF_BLACK, OFF_WHITE, 0.68), // vereda clara

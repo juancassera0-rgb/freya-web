@@ -10,6 +10,7 @@ import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { usePerfFlags } from "./useClientFlags";
 import { useCanvasActive } from "./useCanvasActive";
+import { FRAMING, useViewportClass } from "./useViewportClass";
 import styles from "./ArchitecturalHero.module.css";
 
 /** Three.js queda fuera del bundle de la home hasta que hace falta */
@@ -34,6 +35,7 @@ type Props = {
 export function ArchitecturalHero({ project, config, zones }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
   const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
+  const framing = FRAMING[useViewportClass()];
   const enabled = !reducedMotion && webglOk;
   /* El 3D lee el progreso continuo por ref; React no re-renderiza al scrollear */
   const { rawRef } = useScrollProgress(sectionRef, { enabled, steps: 1 });
@@ -58,6 +60,7 @@ export function ArchitecturalHero({ project, config, zones }: Props) {
               lite={lite}
               tier={tier}
               touch={touch}
+              framing={framing}
               enablePointerParallax={!lite}
               active={active}
             />

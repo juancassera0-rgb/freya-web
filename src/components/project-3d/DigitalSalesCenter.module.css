@@ -400,7 +400,13 @@
 .stage {
   grid-area: stage;
   position: relative;
-  min-height: min(62vh, 520px);
+  /* svh, NO vh.
+     En móvil, `vh` cambia cuando el navegador muestra u oculta su barra
+     de direcciones. Eso redimensiona el canvas, cambia el aspect de la
+     cámara y se ve como un zoom automático y errático. `svh` es estable:
+     siempre el viewport chico, así el canvas nunca se redimensiona al
+     scrollear. Ésta era la causa del bug de "se acerca solo" en celular. */
+  min-height: min(62svh, 520px);
   background: #f0eee8;
   /* pan-y deja pasar el scroll vertical de la página: el arrastre
      horizontal rota la escena, pero el usuario nunca queda atrapado. */
@@ -558,7 +564,8 @@
   }
 
   .stage {
-    min-height: 52vh;
+    /* Altura fija y estable en móvil — ver nota sobre svh arriba */
+    min-height: 56svh;
   }
 
   .floorList {

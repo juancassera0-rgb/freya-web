@@ -115,15 +115,21 @@
   align-items: center;
 }
 
+/* Titular del hero.
+   Deliberadamente MÁS CHICO que el resto de los titulares del sitio: acá
+   la arquitectura es el sujeto y la tipografía la enmarca. Antes ocupaba
+   casi todo el viewport y competía con el edificio.
+   Se acota también por altura (vh) para que en notebooks —viewport ancho
+   pero bajo— no empuje el resto de la composición fuera de pantalla. */
 .headline {
   font-family: var(--font-display);
-  font-size: var(--fs-mega);
-  font-weight: 500;
-  line-height: 0.88;
-  letter-spacing: var(--tracking-mega);
+  font-size: clamp(1.9rem, min(5vw, 7.4vh), 4rem);
+  font-weight: 500; /* Medium — manual de marca para titulares */
+  line-height: 1.02;
+  letter-spacing: -0.015em;
   text-transform: uppercase;
   margin: 0;
-  max-width: 14ch;
+  max-width: 16ch;
   text-wrap: balance;
 }
 

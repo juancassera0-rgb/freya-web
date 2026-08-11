@@ -20,6 +20,8 @@ type Props = {
   tier: QualityTier;
   /** Puntero grueso: encuadres más lejanos y FOV mayor */
   touch?: boolean;
+  /** Ajuste de encuadre por clase de pantalla */
+  framing?: { distance: number; fov: number; targetY: number };
   active?: boolean;
   onContextLost?: () => void;
   children: ReactNode;
@@ -67,11 +69,13 @@ function DirectedCamera({
   stage,
   focusFloor,
   touch,
+  framing,
   orbitRef,
 }: {
   stage: SalesStage;
   focusFloor: number | null;
   touch: boolean;
+  framing: { distance: number; targetY: number };
   orbitRef: React.RefObject<OrbitHandle>;
 }) {
   const { camera, invalidate } = useThree();
@@ -84,8 +88,17 @@ function DirectedCamera({
   useEffect(() => {
     const shots = touch ? SHOTS_TOUCH : SHOTS;
     const s = shots[stage];
-    targetPos.current.set(...s.position);
-    targetLook.current.set(...s.target);
+    // El encuadre base se escala según la clase de pantalla
+    targetPos.current.set(
+      s.position[0] * framing.distance,
+      s.position[1] * framing.distance,
+      s.position[2] * framing.distance,
+    );
+    targetLook.current.set(
+      s.target[0],
+      s.target[1] * framing.targetY,
+      s.target[2],
+    );
 
     if (stage === "floor" && focusFloor != null) {
       // Debe coincidir con floorY() de ArchitecturalMassing
@@ -98,7 +111,15 @@ function DirectedCamera({
     const controls = orbitRef.current;
     if (controls) controls.enabled = false;
     invalidate();
-  }, [stage, focusFloor, touch, orbitRef, invalidate]);
+  }, [
+    stage,
+    focusFloor,
+    touch,
+    framing.distance,
+    framing.targetY,
+    orbitRef,
+    invalidate,
+  ]);
 
   useFrame((_, delta) => {
     if (!transitioning.current) return;
@@ -172,6 +193,7 @@ export function SalesCenterScene({
   focusFloor,
   tier,
   touch = false,
+  framing = { distance: 1, fov: 38, targetY: 1 },
   active = true,
   onContextLost,
   children,
@@ -187,6 +209,10 @@ export function SalesCenterScene({
       frameloop={active ? "always" : "never"}
       /* DPR por tier: en pantallas densas renderizar a 3x es tirar GPU */
       dpr={low ? [1, 1.15] : high ? [1, 1.9] : [1, 1.5]}
+      /* Resize amortiguado y desacoplado del scroll: en móvil la barra del
+         navegador dispara resizes constantes al scrollear, y recalcular el
+         canvas en cada uno provocaba saltos de encuadre. */
+      resize={{ scroll: false, debounce: { scroll: 0, resize: 180 } }}
       gl={{
         alpha: false,
         antialias: high,
@@ -196,7 +222,7 @@ export function SalesCenterScene({
       }}
       camera={{
         position: shots.building.position,
-        fov: touch ? 44 : 38,
+        fov: framing.fov,
         near: 0.1,
         far: 48,
       }}
@@ -263,16 +289,28 @@ export function SalesCenterScene({
         />
       )}
 
+      {/* Controles.
+          En táctil: UN dedo rota y NADA MÁS. El pinch queda desactivado
+          por completo (enableZoom=false + TWO: NONE) porque era la vía
+          por la que la escena se acercaba sola: el navegador entrega
+          eventos de dos dedos mezclados con el scroll de la página y
+          OrbitControls los interpretaba como dolly continuo.
+          El encuadre en móvil ya viene resuelto por SHOTS_TOUCH, así que
+          el usuario no necesita zoom para ver el edificio completo. */}
       <OrbitControls
         ref={orbitRef}
         makeDefault
         enablePan={false}
         enableDamping
-        dampingFactor={touch ? 0.12 : 0.07}
-        rotateSpeed={touch ? 0.55 : 0.42}
+        dampingFactor={touch ? 0.1 : 0.07}
+        rotateSpeed={touch ? 0.4 : 0.42}
         zoomSpeed={0.5}
         enableZoom={!touch}
-        touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE }}
+        touches={
+          touch
+            ? { ONE: THREE.TOUCH.ROTATE, TWO: undefined as unknown as THREE.TOUCH }
+            : { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE }
+        }
         minDistance={isUnit ? 3.2 : 3.6}
         maxDistance={isUnit ? 8 : 13}
         minPolarAngle={Math.PI * (isUnit ? 0.08 : 0.2)}
@@ -283,11 +321,15 @@ export function SalesCenterScene({
         stage={stage}
         focusFloor={focusFloor}
         touch={touch}
+        framing={framing}
         orbitRef={orbitRef}
       />
 
       {!low && <FrozenShadows signature={`${stage}:${focusFloor ?? "-"}`} />}
-      <AdaptiveQuality enabled={!high} />
+      {/* En táctil no se mide FPS: cambiar el DPR en medio de los resizes
+          constantes del navegador móvil era parte del comportamiento
+          errático. El tier ya fija una resolución conservadora. */}
+      <AdaptiveQuality enabled={!high && !touch} />
       <WebGLGuard onLost={onContextLost} />
 
       <Suspense fallback={null}>{children}</Suspense>

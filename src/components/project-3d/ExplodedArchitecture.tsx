@@ -8,6 +8,7 @@ import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { usePerfFlags } from "./useClientFlags";
 import { useCanvasActive } from "./useCanvasActive";
+import { FRAMING, useViewportClass } from "./useViewportClass";
 import styles from "./ExplodedArchitecture.module.css";
 
 const MassingCanvas = dynamic(() => import("./MassingCanvas"), {
@@ -38,6 +39,7 @@ type Chapter = {
 export function ExplodedArchitecture({ project, config }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
   const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
+  const framing = FRAMING[useViewportClass()];
   const enabled = !reducedMotion && webglOk;
   /**
    * La UI sólo necesita saber en qué capítulo estamos (4 estados), así que
@@ -120,6 +122,7 @@ export function ExplodedArchitecture({ project, config }: Props) {
               lite={lite}
               tier={tier}
               touch={touch}
+              framing={framing}
               enablePointerParallax={false}
               active={active}
             />

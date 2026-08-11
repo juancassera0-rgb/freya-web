@@ -14,6 +14,7 @@ type Props = {
   tier: QualityTier;
   touch: boolean;
   lite: boolean;
+  framing: { distance: number; fov: number; targetY: number };
   active: boolean;
   onContextLost: () => void;
 
@@ -44,6 +45,7 @@ export default function SalesCenterCanvas({
   tier,
   touch,
   lite,
+  framing,
   active,
   onContextLost,
   selectedFloor,
@@ -64,6 +66,7 @@ export default function SalesCenterCanvas({
       focusFloor={selectedFloor}
       tier={tier}
       touch={touch}
+      framing={framing}
       active={active}
       onContextLost={onContextLost}
     >

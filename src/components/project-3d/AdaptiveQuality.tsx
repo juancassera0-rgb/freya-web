@@ -1,6 +1,6 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 
 export type QualityTier = "low" | "medium" | "high";
@@ -29,56 +29,69 @@ type Props = {
   enabled?: boolean;
   /** FPS por debajo del cual se baja la resolución de render */
   floor?: number;
-  minDpr?: number;
 };
+
+/** Escalones fijos de resolución. Discretos a propósito: ver nota abajo. */
+const STEPS = [1, 0.85, 0.7, 0.55];
 
 /**
  * Degradación automática de resolución.
  *
- * Mide FPS en ventanas de ~1s. Si el dispositivo no sostiene el objetivo,
- * baja el DPR en escalones; si sobra margen, lo devuelve. Así un teléfono
- * de gama media mantiene fluidez en vez de renderizar bonito a 15 FPS,
- * y una máquina potente no queda limitada de entrada.
+ * IMPORTANTE — dos decisiones que arreglan bugs reales:
  *
- * Sólo toca resolución: no altera geometría ni iluminación, así que la
- * identidad visual de la escena se mantiene.
+ * 1. Usa `setDpr` de R3F, NO `gl.setPixelRatio`. R3F es dueño del pixel
+ *    ratio a través de la prop `dpr`; tocarlo por fuera hacía que R3F lo
+ *    reseteara en el siguiente resize. En móvil los resize son constantes
+ *    (barra del navegador), así que eso producía una oscilación continua
+ *    del tamaño del buffer que se veía como zoom errático.
+ *
+ * 2. Baja por escalones fijos y NUNCA vuelve a subir. Antes subía y bajaba
+ *    según el FPS del segundo anterior, lo que generaba un ciclo: baja
+ *    resolución → sube FPS → sube resolución → baja FPS → baja resolución.
+ *    Ese vaivén es peor que quedarse en la calidad menor. Ahora encuentra
+ *    un escalón estable y se queda ahí.
  */
-export function AdaptiveQuality({
-  enabled = true,
-  floor = 42,
-  minDpr = 0.75,
-}: Props) {
+export function AdaptiveQuality({ enabled = true, floor = 40 }: Props) {
+  const setDpr = useThree((s) => s.setDpr);
   const frames = useRef(0);
   const windowStart = useRef(0);
-  const scale = useRef(1);
-  const maxDpr = useRef(0);
+  const stepIndex = useRef(0);
+  const baseDpr = useRef(0);
+  /** Deja de medir una vez que encontró un escalón estable */
+  const settled = useRef(false);
 
   useFrame((state) => {
-    if (!enabled) return;
+    if (!enabled || settled.current) return;
 
-    if (maxDpr.current === 0) {
-      maxDpr.current = state.gl.getPixelRatio();
+    if (baseDpr.current === 0) {
+      baseDpr.current = state.gl.getPixelRatio();
       windowStart.current = performance.now();
+      return;
     }
 
     frames.current += 1;
     const now = performance.now();
     const elapsed = now - windowStart.current;
-    if (elapsed < 1000) return;
+    if (elapsed < 1200) return;
 
     const fps = (frames.current * 1000) / elapsed;
     frames.current = 0;
     windowStart.current = now;
 
-    const max = maxDpr.current;
-    let next = scale.current;
-    if (fps < floor) next = Math.max(minDpr / max, next - 0.18);
-    else if (fps > floor + 18) next = Math.min(1, next + 0.12);
-
-    if (Math.abs(next - scale.current) > 0.01) {
-      scale.current = next;
-      state.gl.setPixelRatio(Math.max(minDpr, max * next));
+    if (fps >= floor) {
+      // Sostiene el objetivo en el escalón actual: se queda acá
+      settled.current = true;
+      return;
     }
+
+    if (stepIndex.current >= STEPS.length - 1) {
+      // Ya está en el escalón más bajo, no hay nada más que hacer
+      settled.current = true;
+      return;
+    }
+
+    stepIndex.current += 1;
+    setDpr(baseDpr.current * STEPS[stepIndex.current]);
   });
 
   return null;

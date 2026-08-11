@@ -8,6 +8,7 @@ import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { usePerfFlags } from "./useClientFlags";
 import { useCanvasActive } from "./useCanvasActive";
+import { FRAMING, useViewportClass } from "./useViewportClass";
 import styles from "./ProjectStory3D.module.css";
 
 const MassingCanvas = dynamic(() => import("./MassingCanvas"), {
@@ -27,6 +28,7 @@ type Props = {
 export function ProjectStory3D({ project, config }: Props) {
   const rootRef = useRef<HTMLElement>(null);
   const { reducedMotion, lite, touch, tier } = usePerfFlags();
+  const framing = FRAMING[useViewportClass()];
   const enabled = !reducedMotion;
   const { mounted, active } = useCanvasActive(rootRef, { rootMargin: "0px" });
 
@@ -70,6 +72,7 @@ export function ProjectStory3D({ project, config }: Props) {
               lite={lite}
               tier={tier}
               touch={touch}
+              framing={framing}
               enablePointerParallax={!lite}
               active={active}
             />

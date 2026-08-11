@@ -31,6 +31,8 @@ type Props = {
   tier?: QualityTier;
   /** Puntero grueso: abre el FOV para que el edificio entre completo */
   touch?: boolean;
+  /** Ajuste de encuadre por clase de pantalla */
+  framing?: { distance: number; fov: number; targetY: number };
   /** false detiene el render loop (fuera de viewport o pestaña oculta) */
   active?: boolean;
 };
@@ -46,6 +48,7 @@ export function Project3DScene({
   performanceMode = "full",
   tier = "high",
   touch = false,
+  framing = { distance: 1, fov: 38, targetY: 1 },
   active = true,
 }: Props) {
   const isHero = variant === "hero";
@@ -67,6 +70,7 @@ export function Project3DScene({
       className={className}
       frameloop={active ? "always" : "never"}
       dpr={low ? [1, 1.15] : high ? [1, 1.9] : [1, 1.5]}
+      resize={{ scroll: false, debounce: { scroll: 0, resize: 180 } }}
       gl={{
         alpha: false,
         antialias: high,
@@ -74,10 +78,15 @@ export function Project3DScene({
         stencil: false,
       }}
       camera={{
-        position: start.position,
-        /* En pantallas angostas se abre el FOV: la torre es alta y estrecha,
-           con el encuadre de desktop quedaría cortada o diminuta. */
-        fov: touch ? (isHero ? 46 : 44) : isHero ? 36 : 38,
+        position: [
+          start.position[0] * framing.distance,
+          start.position[1] * framing.distance,
+          start.position[2] * framing.distance,
+        ],
+        /* FOV por clase de pantalla: la torre es alta y estrecha, así que
+           en viewports angostos o bajos hay que abrir el ángulo o queda
+           cortada. El hero usa un ángulo levemente más cerrado. */
+        fov: isHero ? framing.fov - 2 : framing.fov,
         near: 0.1,
         far: 48,
       }}
@@ -153,7 +162,7 @@ export function Project3DScene({
         />
       )}
 
-      <AdaptiveQuality enabled={!high} />
+      <AdaptiveQuality enabled={!high && !touch} />
       <WebGLGuard />
 
       <Suspense fallback={null}>{children}</Suspense>

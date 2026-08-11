@@ -24,33 +24,29 @@ const CURB_Z = FRONT + SIDEWALK_D; // cordón
 const CURB_H = 0.055;
 const STREET_D = 5.5;
 
-/** Árboles de vereda: posición X y escala, distribución irregular */
-const TREES: [number, number][] = [
-  [-2.35, 1.0],
-  [-0.35, 0.86],
-  [1.75, 1.06],
-  [3.6, 0.92],
-  [-4.2, 0.95],
-];
-
-/** Volúmenes vecinos: [x, ancho, alto, profundidad] */
-const NEIGHBOURS: [number, number, number, number][] = [
-  [-1.72, 1.75, 2.25, 2.3], // vecino izquierdo, más bajo
-  [1.78, 1.85, 1.75, 2.15], // vecino derecho, más bajo aún
-  [-3.6, 1.9, 2.9, 2.2], // fondo de manzana
-  [3.75, 2.0, 2.05, 2.0],
+/**
+ * Árboles de vereda: [x, escala, variación de tono].
+ * Se corrieron hacia los lados y al frente para no taparlo: ninguno queda
+ * delante de la fachada.
+ */
+const TREES: [number, number, number][] = [
+  [-2.6, 1.05, 0.0],
+  [-1.5, 0.88, 0.35],
+  [2.0, 1.1, 0.15],
+  [3.3, 0.94, 0.5],
+  [-4.1, 0.98, 0.25],
 ];
 
 /**
- * Contexto del emplazamiento: vereda, cordón, calzada, canteros, arbolado
- * y las construcciones linderas.
+ * Contexto del emplazamiento: vereda, cordón, calzada, canteros y arbolado.
  *
- * Los vecinos no son decoración: son la explicación de por qué el edificio
- * tiene medianeras ciegas. Al verlos, la volumetría se entiende.
+ * Los volúmenes vecinos se quitaron a pedido: le restaban protagonismo al
+ * edificio y ensuciaban la lectura. La escena ahora es el edificio, su
+ * vereda y el arbolado del barrio.
  *
  * Todos los colores vienen de sceneTokens, derivados de la paleta de marca.
  * El arbolado usa instancing (una draw call para todas las copas y otra
- * para los troncos).
+ * para los troncos), con color por instancia para que no se vean clonados.
  */
 export function SiteContext({ mood, detail }: Props) {
   const low = detail === "low";
@@ -64,14 +60,23 @@ export function SiteContext({ mood, detail }: Props) {
       sidewalk: m(SITE.sidewalk, 0.95),
       curb: m(SITE.curb, 0.9),
       asphalt: m(SITE.asphalt, 0.98),
-      grass: m(SITE.grass, 1),
-      grassLight: m(SITE.grassLight, 1),
+      grass: m(SITE.grass, 0.92),
+      grassLight: m(SITE.grassLight, 0.9),
       trunk: m(SITE.trunk, 0.95),
-      foliage: m(dusk ? SITE.foliage : SITE.foliageLight, 1),
-      neighbour: m(SITE.neighbour, 0.94),
-      neighbourShade: m(SITE.neighbourShade, 0.94),
+      /* El material base va en blanco: el color real lo aporta cada
+         instancia, lo que permite variar el follaje sin sumar draw calls. */
+      foliage: m("#ffffff", 0.85),
     };
-  }, [dusk]);
+  }, []);
+
+  /** Tres tonos de follaje; cada árbol mezcla los tres en sus masas */
+  const foliageTones = useMemo(
+    () =>
+      dusk
+        ? [SITE.foliage, SITE.foliageMid, SITE.foliage]
+        : [SITE.foliageMid, SITE.foliageLight, SITE.foliage],
+    [dusk],
+  );
 
   // Copa de árbol: icosaedro achatado — silueta orgánica con muy pocos polígonos
   const canopyGeo = useMemo(() => {
@@ -189,41 +194,60 @@ export function SiteContext({ mood, detail }: Props) {
                 scale={[1, s, 1]}
               />
             ))}
+
           </Instances>
 
           <Instances
-            limit={trees.length * 3}
-            range={trees.length * 3}
+            limit={trees.length * 4}
+            range={trees.length * 4}
             geometry={canopyGeo}
             material={mats.foliage}
             castShadow={!low}
           >
-            {trees.flatMap(([x, s], i) => {
-              // Tres masas por copa: silueta más creíble que una esfera
+            {trees.flatMap(([x, s, tone], i) => {
+              /* Cuatro masas por copa con tonos distintos: el follaje se
+                 lee volumétrico y vivo en vez de una bocha uniforme.
+                 El desfase `tone` evita que dos árboles se vean clonados. */
               const base = CURB_H + 0.7 * s;
+              const t = (n: number) =>
+                foliageTones[Math.floor(tone * 3 + n) % foliageTones.length];
               return [
                 <Instance
                   key={`c-${i}-0`}
-                  position={[x, base + 0.28 * s, CURB_Z - 0.36]}
+                  position={[x, base + 0.3 * s, CURB_Z - 0.36]}
                   scale={s}
+                  color={t(1)}
                 />,
                 <Instance
                   key={`c-${i}-1`}
                   position={[
-                    x - 0.22 * s,
-                    base + 0.14 * s,
-                    CURB_Z - 0.36 + 0.16 * s,
+                    x - 0.23 * s,
+                    base + 0.13 * s,
+                    CURB_Z - 0.36 + 0.17 * s,
                   ]}
-                  scale={s * 0.72}
+                  scale={s * 0.74}
+                  color={t(0)}
                 />,
                 <Instance
                   key={`c-${i}-2`}
                   position={[
-                    x + 0.24 * s,
-                    base + 0.19 * s,
-                    CURB_Z - 0.36 - 0.14 * s,
+                    x + 0.25 * s,
+                    base + 0.2 * s,
+                    CURB_Z - 0.36 - 0.15 * s,
                   ]}
-                  scale={s * 0.66}
+                  scale={s * 0.68}
+                  color={t(2)}
+                />,
+                // Masa alta iluminada: da el remate y capta el sol
+                <Instance
+                  key={`c-${i}-3`}
+                  position={[
+                    x + 0.06 * s,
+                    base + 0.5 * s,
+                    CURB_Z - 0.36 + 0.04 * s,
+                  ]}
+                  scale={s * 0.56}
+                  color={foliageTones[1]}
                 />,
               ];
             })}
@@ -231,33 +255,6 @@ export function SiteContext({ mood, detail }: Props) {
         </>
       )}
 
-      {/* ---------- Construcciones linderas ----------
-          Explican visualmente por qué las medianeras del edificio son
-          ciegas: hay obra pegada a ambos lados. */}
-      {NEIGHBOURS.map(([x, w, h, d], i) => (
-        <mesh
-          key={`n-${i}`}
-          position={[x, h / 2, -0.1]}
-          castShadow={!low}
-          receiveShadow={!low}
-          material={i % 2 === 0 ? mats.neighbour : mats.neighbourShade}
-        >
-          <boxGeometry args={[w, h, d]} />
-        </mesh>
-      ))}
-
-      {/* Parapetos de los vecinos — remate creíble, no cajas rasas */}
-      {!low &&
-        NEIGHBOURS.map(([x, w, h, d], i) => (
-          <mesh
-            key={`np-${i}`}
-            position={[x, h + 0.055, -0.1 + d / 2 - 0.06]}
-            castShadow
-            material={mats.neighbourShade}
-          >
-            <boxGeometry args={[w, 0.11, 0.1]} />
-          </mesh>
-        ))}
     </group>
   );
 }
