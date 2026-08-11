@@ -1,0 +1,536 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  buildUnitPlan,
+  roomsWithRenders,
+  type PlanRoom,
+} from "@/data/planGeometry";
+import {
+  getUnitsForFloor,
+  type Project3DConfig,
+  type ProjectUnit,
+} from "@/data/project3d";
+import { ArchitecturalMassing } from "./ArchitecturalMassing";
+import { FloorPlate3D } from "./FloorPlate3D";
+import { HotspotMarkers } from "./HotspotMarkers";
+import { PlanSVG } from "./PlanSVG";
+import { RenderViewer } from "./RenderViewer";
+import { usePerfFlags } from "./useClientFlags";
+import type { SalesStage } from "./SalesCenterScene";
+import styles from "./DigitalSalesCenter.module.css";
+
+const SalesCenterScene = dynamic(
+  () => import("./SalesCenterScene").then((m) => m.SalesCenterScene),
+  { ssr: false, loading: () => <div className={styles.canvasLoading} /> },
+);
+
+type Props = {
+  config: Project3DConfig;
+  projectName: string;
+};
+
+const STATUS_LABEL: Record<ProjectUnit["status"], string> = {
+  disponible: "Disponible",
+  reservado: "Reservado",
+  vendido: "Vendido",
+};
+
+/**
+ * Explorador comercial completo: edificio → piso → unidad → espacio → render.
+ *
+ * Una sola escena WebGL sostiene las tres etapas, por eso las transiciones
+ * son continuas: al elegir un piso la losa se extrae del volumen y la cámara
+ * la sigue; al abrir una unidad, la planta se lee como dibujo técnico y el
+ * slider la eleva hasta volumen usando la misma geometría.
+ */
+export function DigitalSalesCenter({ config, projectName }: Props) {
+  const rootRef = useRef<HTMLElement>(null);
+  const { reducedMotion, lite, webglOk } = usePerfFlags();
+
+  const [mounted, setMounted] = useState(false);
+  const [stage, setStage] = useState<SalesStage>("building");
+  const [hoveredFloor, setHoveredFloor] = useState<number | null>(null);
+  const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [morph, setMorph] = useState(0.35);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [viewerRoom, setViewerRoom] = useState<PlanRoom | null>(null);
+  const [extract, setExtract] = useState(0);
+
+  const canRender3D = webglOk && !reducedMotion;
+
+  // Monta el canvas sólo al entrar en viewport
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e?.isIntersecting) {
+          setMounted(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "150px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // Anima la extracción de la losa al entrar en la etapa de piso.
+  // En "building" el valor efectivo es 0 por derivación, sin setState.
+  useEffect(() => {
+    if (stage === "building") return;
+
+    let raf = 0;
+    const start = performance.now();
+    const duration = reducedMotion ? 0 : 900;
+
+    const tick = (now: number) => {
+      const t = duration === 0 ? 1 : Math.min(1, (now - start) / duration);
+      setExtract(1 - Math.pow(1 - t, 3));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [stage, selectedFloor, reducedMotion]);
+
+  /** En la vista de edificio la losa nunca está extraída. */
+  const effectiveExtract = stage === "building" ? 0 : extract;
+
+  const floorUnits = useMemo(
+    () => (selectedFloor != null ? getUnitsForFloor(config, selectedFloor) : []),
+    [config, selectedFloor],
+  );
+
+  const selectedUnit = useMemo(
+    () => config.units.find((u) => u.id === selectedUnitId) ?? null,
+    [config.units, selectedUnitId],
+  );
+
+  const plan = useMemo(
+    () =>
+      selectedUnit
+        ? buildUnitPlan(selectedUnit.typology, config.roomRenders ?? {})
+        : null,
+    [selectedUnit, config.roomRenders],
+  );
+
+  const renderRooms = useMemo(
+    () => (plan ? roomsWithRenders(plan) : []),
+    [plan],
+  );
+
+  const selectFloor = useCallback((level: number) => {
+    setSelectedFloor(level);
+    setSelectedUnitId(null);
+    setActiveRoomId(null);
+    setStage("floor");
+  }, []);
+
+  const selectUnit = useCallback((id: string) => {
+    setSelectedUnitId(id);
+    setActiveRoomId(null);
+    setMorph(0.35);
+    setStage("unit");
+  }, []);
+
+  const backToBuilding = useCallback(() => {
+    setStage("building");
+    setSelectedFloor(null);
+    setSelectedUnitId(null);
+    setActiveRoomId(null);
+  }, []);
+
+  const backToFloor = useCallback(() => {
+    setStage("floor");
+    setSelectedUnitId(null);
+    setActiveRoomId(null);
+  }, []);
+
+  /** Abre el render del ambiente si existe; si no, sólo lo resalta. */
+  const handleSelectRoom = useCallback((room: PlanRoom) => {
+    setActiveRoomId(room.id);
+    if (room.renderSrc) setViewerRoom(room);
+  }, []);
+
+  /**
+   * Hotspot del edificio → render de espacio común, si el proyecto lo tiene.
+   * Se reutiliza el visor tratando el espacio común como un "ambiente".
+   */
+  const openCommonRender = useCallback(
+    (hotspotId: string) => {
+      const found = config.commonRenders?.find((r) => r.id === hotspotId);
+      const hotspot = config.hotspots.find((h) => h.id === hotspotId);
+      if (!found || !hotspot) return;
+      setViewerRoom({
+        id: hotspot.id,
+        label: hotspot.label,
+        kind: "circulacion",
+        x: 0,
+        y: 0,
+        w: 1,
+        h: 1,
+        renderSrc: found.src,
+        renderAlt: found.alt,
+      });
+    },
+    [config.commonRenders, config.hotspots],
+  );
+
+  /** Vuelta desde el render al plano, con el ambiente resaltado. */
+  const handleViewerBackToPlan = useCallback(() => {
+    setViewerRoom((room) => {
+      if (room) setActiveRoomId(room.id);
+      return null;
+    });
+  }, []);
+
+  const asesorHref = selectedUnit
+    ? `/asesor?proyecto=${config.projectSlug}&unidad=${encodeURIComponent(selectedUnit.code)}&piso=${selectedUnit.floor}`
+    : selectedFloor
+      ? `/asesor?proyecto=${config.projectSlug}&piso=${selectedFloor}`
+      : `/asesor?proyecto=${config.projectSlug}`;
+
+  const stageLabel =
+    stage === "building"
+      ? "Edificio"
+      : stage === "floor"
+        ? `Piso ${selectedFloor}`
+        : `Unidad ${selectedUnit?.code ?? ""}`;
+
+  return (
+    <section
+      ref={rootRef}
+      className={styles.root}
+      data-stage={stage}
+      aria-label={`Explorador comercial — ${projectName}`}
+    >
+      {/* ---------- Barra de recorrido ---------- */}
+      <nav className={styles.breadcrumb} aria-label="Recorrido">
+        <button
+          type="button"
+          onClick={backToBuilding}
+          data-active={stage === "building"}
+          className={styles.crumb}
+        >
+          <span className={styles.crumbIndex}>01</span>
+          Edificio
+        </button>
+        <span className={styles.crumbSep} aria-hidden>→</span>
+        <button
+          type="button"
+          onClick={selectedFloor ? backToFloor : undefined}
+          disabled={!selectedFloor}
+          data-active={stage === "floor"}
+          className={styles.crumb}
+        >
+          <span className={styles.crumbIndex}>02</span>
+          {selectedFloor ? `Piso ${selectedFloor}` : "Piso"}
+        </button>
+        <span className={styles.crumbSep} aria-hidden>→</span>
+        <button
+          type="button"
+          disabled={!selectedUnit}
+          data-active={stage === "unit"}
+          className={styles.crumb}
+        >
+          <span className={styles.crumbIndex}>03</span>
+          {selectedUnit ? `Unidad ${selectedUnit.code}` : "Unidad"}
+        </button>
+      </nav>
+
+      <div className={styles.layout}>
+        {/* ---------- Panel izquierdo: selector ---------- */}
+        <aside className={styles.panelLeft}>
+          <header className={styles.panelHead}>
+            <p className={styles.eyebrow}>Explorá el proyecto</p>
+            <h2 className={styles.title}>{projectName}</h2>
+          </header>
+
+          {stage === "building" && (
+            <div className={styles.stageBlock}>
+              <p className={styles.hint}>
+                Elegí un nivel sobre el edificio o en la lista. El piso se
+                separa del volumen para mostrar su planta.
+              </p>
+              <div className={styles.floorList} role="list">
+                {[...config.floors].reverse().map((floor) => (
+                  <button
+                    key={floor.level}
+                    type="button"
+                    role="listitem"
+                    className={styles.floorBtn}
+                    data-hovered={hoveredFloor === floor.level}
+                    onPointerEnter={() => setHoveredFloor(floor.level)}
+                    onPointerLeave={() => setHoveredFloor(null)}
+                    onClick={() => selectFloor(floor.level)}
+                  >
+                    <span className={styles.floorLevel}>
+                      {String(floor.level).padStart(2, "0")}
+                    </span>
+                    <span className={styles.floorLabel}>{floor.label}</span>
+                    <span className={styles.floorUnits}>
+                      {floor.unitIds.length} unid.
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {stage === "floor" && selectedFloor != null && (
+            <div className={styles.stageBlock}>
+              <p className={styles.hint}>
+                Unidades del piso {selectedFloor}. Elegí una para abrir su
+                planta.
+              </p>
+              <div className={styles.unitList} role="list">
+                {floorUnits.map((unit) => (
+                  <button
+                    key={unit.id}
+                    type="button"
+                    role="listitem"
+                    className={styles.unitBtn}
+                    data-status={unit.status}
+                    onClick={() => selectUnit(unit.id)}
+                  >
+                    <span className={styles.unitCode}>{unit.code}</span>
+                    <span className={styles.unitSpecs}>
+                      {unit.typology} · {unit.surfaceM2} m²
+                    </span>
+                    <span className={styles.unitStatus}>
+                      {STATUS_LABEL[unit.status]}
+                    </span>
+                    <span className={styles.unitOrient}>
+                      {unit.orientation ?? "—"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className={styles.backBtn}
+                onClick={backToBuilding}
+              >
+                ← Volver al edificio
+              </button>
+            </div>
+          )}
+
+          {stage === "unit" && selectedUnit && plan && (
+            <div className={styles.stageBlock}>
+              {/* Control de morph plano ↔ volumen */}
+              <div className={styles.morphBlock}>
+                <div className={styles.morphHead}>
+                  <span>Plano</span>
+                  <span>Volumen</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={morph}
+                  onChange={(e) => setMorph(Number(e.target.value))}
+                  className={styles.morphSlider}
+                  aria-label="Transición del plano técnico al volumen 3D"
+                />
+                <p className={styles.morphNote}>
+                  El plano y el volumen son la misma geometría: los muros se
+                  elevan a medida que avanzás.
+                </p>
+              </div>
+
+              {/* Ambientes con render disponible */}
+              {renderRooms.length > 0 && (
+                <div className={styles.roomBlock}>
+                  <p className={styles.blockLabel}>Espacios con render</p>
+                  <div className={styles.roomList}>
+                    {renderRooms.map((room) => (
+                      <button
+                        key={room.id}
+                        type="button"
+                        className={styles.roomBtn}
+                        data-active={activeRoomId === room.id}
+                        onPointerEnter={() => setActiveRoomId(room.id)}
+                        onClick={() => handleSelectRoom(room)}
+                      >
+                        <span className={styles.roomDot} aria-hidden />
+                        {room.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <dl className={styles.unitFacts}>
+                <div>
+                  <dt>Superficie</dt>
+                  <dd>{selectedUnit.surfaceM2} m²</dd>
+                </div>
+                <div>
+                  <dt>Tipología</dt>
+                  <dd>{selectedUnit.typology}</dd>
+                </div>
+                <div>
+                  <dt>Piso</dt>
+                  <dd>{selectedUnit.floor}</dd>
+                </div>
+                <div>
+                  <dt>Orientación</dt>
+                  <dd>{selectedUnit.orientation ?? "—"}</dd>
+                </div>
+              </dl>
+
+              <Link className={styles.cta} href={asesorHref}>
+                Consultar por unidad {selectedUnit.code}
+                <span aria-hidden>→</span>
+              </Link>
+
+              <button
+                type="button"
+                className={styles.backBtn}
+                onClick={backToFloor}
+              >
+                ← Volver al piso {selectedUnit.floor}
+              </button>
+            </div>
+          )}
+        </aside>
+
+        {/* ---------- Escena central ---------- */}
+        <div className={styles.stage} data-cursor={lite ? undefined : "Explorar"}>
+          {mounted && canRender3D ? (
+            <SalesCenterScene
+              config={config}
+              stage={stage}
+              focusFloor={selectedFloor}
+              lite={lite}
+            >
+              {stage === "unit" && plan ? (
+                <FloorPlate3D
+                  plan={plan}
+                  morph={morph}
+                  activeRoomId={activeRoomId}
+                  onHoverRoom={setActiveRoomId}
+                  onSelectRoom={handleSelectRoom}
+                  lite={lite}
+                />
+              ) : (
+                <>
+                  <ArchitecturalMassing
+                    config={config}
+                    lite={lite}
+                    highlightedFloor={selectedFloor}
+                    hoveredFloor={hoveredFloor}
+                    onHoverFloor={setHoveredFloor}
+                    onSelectFloor={selectFloor}
+                    dimOthers={selectedFloor != null}
+                    extract={effectiveExtract}
+                  />
+                  {/* Hotspots de espacios comunes — abren su render real */}
+                  {!lite && stage === "building" && (
+                    <HotspotMarkers
+                      hotspots={config.hotspots}
+                      activeId={null}
+                      onSelect={openCommonRender}
+                    />
+                  )}
+                </>
+              )}
+            </SalesCenterScene>
+          ) : (
+            <div className={styles.fallback}>
+              <p>
+                {reducedMotion
+                  ? "Vista 3D desactivada por preferencia de movimiento reducido. El recorrido por pisos y unidades sigue disponible en el panel."
+                  : !webglOk
+                    ? "WebGL no disponible en este dispositivo. Podés explorar pisos, unidades y planos desde el panel."
+                    : "Preparando la escena…"}
+              </p>
+            </div>
+          )}
+
+          {/* Etiqueta de etapa sobre la escena */}
+          <p className={styles.stageTag}>{stageLabel}</p>
+
+          {/* Feedback de hover sobre el edificio */}
+          {stage === "building" && hoveredFloor != null && (
+            <p className={styles.hoverTag}>
+              Piso {hoveredFloor} ·{" "}
+              {getUnitsForFloor(config, hoveredFloor).length} unidades
+            </p>
+          )}
+
+          <p className={styles.note}>
+            Volumetría y distribución esquemáticas — pendiente documentación
+            oficial de obra.
+          </p>
+        </div>
+
+        {/* ---------- Panel derecho: plano técnico ---------- */}
+        {stage === "unit" && selectedUnit && plan && (
+          <aside className={styles.panelRight}>
+            <p className={styles.blockLabel}>Plano técnico</p>
+            <div className={styles.planFrame}>
+              <PlanSVG
+                plan={plan}
+                unit={selectedUnit}
+                activeRoomId={activeRoomId}
+                onHoverRoom={setActiveRoomId}
+                onSelectRoom={handleSelectRoom}
+                fade={morph}
+              />
+            </div>
+            <p className={styles.planHint}>
+              El punto marca los ambientes con render disponible.
+            </p>
+          </aside>
+        )}
+      </div>
+
+      {/* ---------- Render fullscreen ---------- */}
+      {viewerRoom?.renderSrc ? (
+        (() => {
+          // Un render de espacio común no pertenece a una planta:
+          // navega entre comunes y no ofrece "ver en plano".
+          const isCommon = !renderRooms.some((r) => r.id === viewerRoom.id);
+          const commonRooms: PlanRoom[] = (config.commonRenders ?? []).map(
+            (cr) => ({
+              id: cr.id,
+              label:
+                config.hotspots.find((h) => h.id === cr.id)?.label ?? cr.id,
+              kind: "circulacion" as const,
+              x: 0,
+              y: 0,
+              w: 1,
+              h: 1,
+              renderSrc: cr.src,
+              renderAlt: cr.alt,
+            }),
+          );
+
+          return (
+            <RenderViewer
+              room={viewerRoom}
+              unitCode={
+                isCommon ? projectName : (selectedUnit?.code ?? "")
+              }
+              rooms={isCommon ? commonRooms : renderRooms}
+              onNavigate={(room) => {
+                setViewerRoom(room);
+                if (!isCommon) setActiveRoomId(room.id);
+              }}
+              onClose={() => setViewerRoom(null)}
+              onBackToPlan={isCommon ? undefined : handleViewerBackToPlan}
+            />
+          );
+        })()
+      ) : null}
+    </section>
+  );
+}

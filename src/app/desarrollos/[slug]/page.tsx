@@ -8,7 +8,7 @@ import { ContactForm } from "@/components/ContactForm";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { MaskReveal } from "@/components/experience/MaskReveal";
 import { ProjectDetailHero } from "@/components/experience/ProjectDetailHero";
-import { BuildingExplorer } from "@/components/project-3d/BuildingExplorer";
+import { DigitalSalesCenter } from "@/components/project-3d/DigitalSalesCenter";
 import { ProjectStory3D } from "@/components/project-3d/ProjectStory3D";
 import { getProject, projects } from "@/data/projects";
 import { getProject3D } from "@/data/project3d";
@@ -97,7 +97,7 @@ export default async function ProjectPage({ params }: Props) {
       {project3d ? (
         <>
           <ProjectStory3D project={project} config={project3d} />
-          <BuildingExplorer config={project3d} projectName={project.name} />
+          <DigitalSalesCenter config={project3d} projectName={project.name} />
         </>
       ) : null}
 

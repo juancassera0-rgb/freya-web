@@ -1,0 +1,119 @@
+.svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: opacity var(--dur-med) var(--ease-arch);
+}
+
+.gridLine {
+  stroke: var(--line);
+  stroke-width: 0.5;
+}
+
+/* --- Ambientes --- */
+.room[data-clickable="true"] {
+  cursor: pointer;
+}
+
+.roomFill {
+  fill: color-mix(in srgb, var(--accent-soft) 45%, transparent);
+  transition: fill var(--dur-fast) var(--ease-arch);
+}
+
+.room[data-kind="balcon"] .roomFill {
+  fill: color-mix(in srgb, var(--camo) 14%, transparent);
+}
+
+.room[data-kind="bano"] .roomFill,
+.room[data-kind="cocina"] .roomFill {
+  fill: color-mix(in srgb, var(--line) 30%, transparent);
+}
+
+.room:hover .roomFill,
+.room[data-active="true"] .roomFill {
+  fill: color-mix(in srgb, var(--camo) 55%, transparent);
+}
+
+.roomLabel {
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  fill: var(--ink-soft);
+  text-anchor: middle;
+  pointer-events: none;
+  transition: fill var(--dur-fast) var(--ease-arch);
+}
+
+.room[data-active="true"] .roomLabel,
+.room:hover .roomLabel {
+  fill: var(--off-white);
+}
+
+/* Punto = el ambiente tiene render real */
+.renderDot {
+  fill: var(--camo);
+  pointer-events: none;
+}
+
+.room[data-active="true"] .renderDot,
+.room:hover .renderDot {
+  fill: var(--off-white);
+}
+
+/* --- Estructura --- */
+.wall {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.8;
+  pointer-events: none;
+}
+
+.envelope {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  pointer-events: none;
+}
+
+.window {
+  stroke: var(--camo);
+  stroke-width: 3.5;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.door {
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* --- Anotaciones --- */
+.north {
+  stroke: var(--muted);
+  stroke-width: 1.1;
+  fill: none;
+  pointer-events: none;
+}
+
+.north text {
+  font-size: 7px;
+  fill: var(--muted);
+  stroke: none;
+  text-anchor: middle;
+  font-weight: 600;
+}
+
+.dim line {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.dim text {
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  fill: var(--muted);
+  text-anchor: middle;
+  text-transform: uppercase;
+}

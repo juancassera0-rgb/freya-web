@@ -1,0 +1,41 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.42rem;
+  background: color-mix(in srgb, var(--off-white) 92%, transparent);
+  border: 1px solid var(--line);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease-arch),
+    color var(--dur-fast) var(--ease-arch),
+    border-color var(--dur-fast) var(--ease-arch);
+}
+
+.tag[data-active="true"] {
+  background: var(--camo);
+  border-color: var(--camo);
+  color: var(--off-white);
+}
+
+/* Punto que indica que el ambiente tiene render real disponible */
+.tagDot {
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 50%;
+  background: var(--camo);
+  flex-shrink: 0;
+}
+
+.tag[data-active="true"] .tagDot {
+  background: var(--off-white);
+}
+
+.tag[data-render="false"] .tagDot {
+  display: none;
+}

@@ -3,6 +3,8 @@
  * Unidades con `demo: true` son solo para probar la UI — NO inventario comercial real.
  */
 
+import type { RoomRenderMap } from "./planGeometry";
+
 export type UnitStatus = "disponible" | "reservado" | "vendido";
 
 export type ProjectUnit = {
@@ -57,6 +59,14 @@ export type Project3DConfig = {
   floors: ProjectFloor[];
   units: ProjectUnit[];
   hotspots: ProjectHotspot[];
+  /**
+   * Renders reales del proyecto asociados a espacios de la unidad.
+   * Sólo se listan los que existen entre los assets — el explorador
+   * únicamente ofrece "ver render" en los ambientes presentes acá.
+   */
+  roomRenders?: RoomRenderMap;
+  /** Renders de espacios comunes / exterior, para los hotspots del edificio */
+  commonRenders?: { id: string; src: string; alt: string }[];
   camera: {
     intro: CameraWaypoint;
     overview: CameraWaypoint;
@@ -118,6 +128,34 @@ export const beauchef3d: Project3DConfig = {
     "Inventario de demostración para la interfaz. Reemplazar con tipologías y disponibilidad oficiales.",
   floors: demoInventory.floors,
   units: demoInventory.units,
+  /**
+   * Renders reales existentes en /public/images/projects para Beauchef.
+   * El living es el único interior disponible hoy; cuando lleguen más
+   * renders por ambiente se agregan acá y el explorador los toma solo.
+   */
+  roomRenders: {
+    living: {
+      src: "/images/projects/beauchef-living.jpg",
+      alt: "Living comedor de Beauchef 620",
+    },
+  },
+  commonRenders: [
+    {
+      id: "lobby",
+      src: "/images/projects/beauchef-acceso.jpg",
+      alt: "Acceso y lobby de Beauchef 620",
+    },
+    {
+      id: "fachada",
+      src: "/images/projects/beauchef-cover.jpg",
+      alt: "Fachada de Beauchef 620",
+    },
+    {
+      id: "fachada-atardecer",
+      src: "/images/projects/beauchef-dusk.jpg",
+      alt: "Beauchef 620 al atardecer",
+    },
+  ],
   hotspots: [
     {
       id: "lobby",

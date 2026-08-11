@@ -15,6 +15,15 @@ type Props = {
   dimOthers?: boolean;
   /** Reduce detalle en móvil */
   lite?: boolean;
+  /** Piso bajo el cursor — feedback inmediato antes del click */
+  hoveredFloor?: number | null;
+  onHoverFloor?: (level: number | null) => void;
+  onSelectFloor?: (level: number) => void;
+  /**
+   * 0→1: cuánto se extrae el piso seleccionado del volumen.
+   * Al llegar a 1 la losa quedó separada y la cámara la tiene encuadrada.
+   */
+  extract?: number;
 };
 
 const W = 2.2;
@@ -38,6 +47,10 @@ export function ArchitecturalMassing({
   selectedUnitId = null,
   dimOthers = false,
   lite = false,
+  hoveredFloor = null,
+  onHoverFloor,
+  onSelectFloor,
+  extract = 0,
 }: Props) {
   const group = useRef<THREE.Group>(null);
   const floors = config.schematicFloors;
@@ -124,11 +137,36 @@ export function ArchitecturalMassing({
         const y = floorY(level);
         const active = highlightedFloor === level;
         const isSelectedFloor = selectedUnit?.floor === level;
-        const emphasised = active || isSelectedFloor;
+        const isHovered = hoveredFloor === level;
+        const emphasised = active || isSelectedFloor || isHovered;
         const dimmed = dimOthers && !emphasised;
 
+        // El piso seleccionado se desplaza hacia el observador y sube:
+        // "sale" del edificio en lugar de sólo iluminarse.
+        const isExtracting = active && extract > 0;
+        const exZ = isExtracting ? extract * 1.15 : 0;
+        const exY = isExtracting ? extract * 0.22 : 0;
+
         return (
-          <group key={level} position={[0, y, 0]}>
+          <group key={level} position={[0, y + exY, exZ]}>
+            {/* Zona de captura para hover/click del nivel completo */}
+            {onSelectFloor ? (
+              <mesh
+                position={[0, FLOOR_H * 0.4, 0]}
+                visible={false}
+                onPointerOver={(e) => {
+                  e.stopPropagation();
+                  onHoverFloor?.(level);
+                }}
+                onPointerOut={() => onHoverFloor?.(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectFloor(level);
+                }}
+              >
+                <boxGeometry args={[W + 0.3, FLOOR_H * 0.92, D + 0.3]} />
+              </mesh>
+            ) : null}
             {/* Losa — canto expresado, gesto arquitectónico */}
             <mesh castShadow receiveShadow>
               <boxGeometry args={[W + 0.1, 0.055, D + 0.1]} />

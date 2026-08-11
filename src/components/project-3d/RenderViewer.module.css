@@ -1,0 +1,201 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--dark);
+  color: var(--off-white);
+  opacity: 0;
+  transition: opacity var(--dur-med) var(--ease-arch);
+}
+
+.root[data-entered="true"] {
+  opacity: 1;
+}
+
+.mediaMask {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.9s var(--ease-arch);
+}
+
+.root[data-entered="true"] .mediaMask {
+  clip-path: inset(0 0 0 0);
+}
+
+.media {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.05);
+  transition: transform 0.6s var(--ease-arch);
+  will-change: transform;
+}
+
+.img {
+  object-fit: cover;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--dark) 55%, transparent) 0%,
+    transparent 30%,
+    transparent 62%,
+    color-mix(in srgb, var(--dark) 78%, transparent) 100%
+  );
+}
+
+.ui {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: clamp(1.25rem, 3vw, 2.25rem) var(--gutter);
+}
+
+/* --- Cabecera --- */
+.head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.headMeta {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.unit {
+  font-size: var(--fs-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--off-white) 62%, transparent);
+}
+
+.roomName {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 2.75rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--off-white) 35%, transparent);
+  background: transparent;
+  color: var(--off-white);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-arch),
+    border-color var(--dur-fast) var(--ease-arch);
+}
+
+.close:hover {
+  background: var(--off-white);
+  color: var(--ink);
+  border-color: var(--off-white);
+}
+
+/* --- Pie --- */
+.foot {
+  grid-row: 3;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--off-white) 55%, transparent);
+}
+
+.counter em {
+  font-style: normal;
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--off-white);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.planBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.9rem 1.35rem;
+  border: none;
+  background: var(--off-white);
+  color: var(--ink);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-arch);
+}
+
+.planBtn:hover {
+  background: var(--camo);
+  color: var(--off-white);
+}
+
+.nav {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.nav button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid color-mix(in srgb, var(--off-white) 35%, transparent);
+  background: transparent;
+  color: var(--off-white);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-arch),
+    border-color var(--dur-fast) var(--ease-arch);
+}
+
+.nav button:hover {
+  background: var(--off-white);
+  color: var(--ink);
+  border-color: var(--off-white);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .mediaMask,
+  .media {
+    transition: none;
+    clip-path: none;
+    transform: none !important;
+    opacity: 1;
+  }
+}
