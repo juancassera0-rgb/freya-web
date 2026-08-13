@@ -10,10 +10,6 @@ type Props = {
   config: Project3DConfig;
   /** 0 = compacto, 1 = pisos separados (vista explotada) */
   explode?: number;
-  /**
-   * Alternativa a `explode` leída por referencia: permite que el scroll
-   * mueva la vista explotada a 60fps sin re-renderizar React.
-   */
   explodeRef?: RefObject<number>;
   highlightedFloor?: number | null;
   selectedUnitId?: string | null;
@@ -23,28 +19,27 @@ type Props = {
   hoveredFloor?: number | null;
   onHoverFloor?: (level: number | null) => void;
   onSelectFloor?: (level: number) => void;
-  /** Objetivo 0→1 de extracción de la losa seleccionada. Se interpola interno. */
   extract?: number;
+  /**
+   * Balanceo de presencia. Se apaga en táctil: en un teléfono compite con
+   * el gesto del usuario y hace que la escena parezca inestable justo
+   * cuando se la está tocando.
+   */
+  idleSway?: boolean;
 };
 
 /* --------------------------------------------------------------------------
    PROPORCIONES — derivadas de los renders del proyecto.
-   Torre entre medianeras: frente angosto, lote profundo. El frente da a la
-   calle; la medianera ciega corre por un lateral y por el fondo.
    -------------------------------------------------------------------------- */
-const W = 1.62; // ancho de frente (angosto)
-const D = 2.45; // profundidad (mayor que el frente)
+const W = 1.62;
+const D = 2.45;
 const FLOOR_H = 0.4;
-const GROUND_H = 0.62; // basamento más alto y retranqueado
-const SLAB_T = 0.052; // canto de losa expresado
-const CANTILEVER = 0.3; // vuelo del balcón sobre la línea de vidrio
+const GROUND_H = 0.62;
+const SLAB_T = 0.052;
+const CANTILEVER = 0.3;
 const RAIL_H = 0.13;
-const PARTY_EXTRA = 0.55; // la medianera sobrepasa la última losa
+const PARTY_EXTRA = 0.55;
 
-/**
- * Paleta del edificio. Todos los tonos salen de sceneTokens, o sea de los
- * tres colores del manual de marca — no hay hex sueltos acá.
- */
 const COL = {
   stucco: SITE.stucco,
   slabFascia: SITE.slabFascia,
@@ -56,6 +51,8 @@ const COL = {
   ground: SITE.groundFloor,
   green: SITE.foliage,
   accent: BRAND.camo,
+  interior: SITE.interior,
+  interiorLit: SITE.interiorLit,
 };
 
 export function ArchitecturalMassing({
@@ -70,16 +67,15 @@ export function ArchitecturalMassing({
   onHoverFloor,
   onSelectFloor,
   extract = 0,
+  idleSway = true,
 }: Props) {
   const group = useRef<THREE.Group>(null);
   const slabRefs = useRef<Map<number, THREE.Group>>(new Map());
   const crownRef = useRef<THREE.Group>(null);
   const parapetRef = useRef<THREE.Mesh>(null);
-  /** Valores interpolados — viven en refs, no disparan re-render */
   const extractNow = useRef(0);
   const explodeNow = useRef(explode);
 
-  // Niveles con balcón: el último es penthouse retirado
   const floors = config.schematicFloors;
   const towerFloors = Math.max(1, floors - 1);
 
@@ -87,7 +83,25 @@ export function ArchitecturalMassing({
     ? config.units.find((u) => u.id === selectedUnitId)
     : null;
 
-  /* ---------- Materiales compartidos (una instancia para toda la escena) ---------- */
+  /* ------------------------------------------------------------------
+     MATERIALES COMPARTIDOS — incluidas las VARIANTES DE ESTADO.
+
+     Éste era el problema de rendimiento más caro del explorador y no se
+     veía a simple vista.
+
+     La versión anterior declaraba `<meshStandardMaterial>` inline dentro
+     del map de pisos: vidriado, losa, retorno de losa y dos barandas por
+     nivel. Con nueve niveles eso son ~45 materiales distintos, y como
+     estaban en el JSX se REASIGNABAN EN CADA RE-RENDER de React. El
+     hover sobre un piso es un setState, o sea que pasar el mouse por la
+     torre reconstruía 45 materiales por movimiento, cada uno con su
+     propio juego de uniforms y sin posibilidad de agrupar draw calls.
+     Ése era el tirón al recorrer los pisos con el mouse.
+
+     Ahora hay tres variantes por rol —base, destacada y atenuada— creadas
+     una sola vez. El hover pasa a ser elegir una referencia ya existente:
+     cero asignaciones, y Three puede reutilizar el programa entre pisos.
+     ------------------------------------------------------------------ */
   const mat = useMemo(() => {
     const make = (
       color: string,
@@ -95,28 +109,54 @@ export function ArchitecturalMassing({
       opts: Partial<THREE.MeshStandardMaterialParameters> = {},
     ) => new THREE.MeshStandardMaterial({ color, roughness, ...opts });
 
+    const glass = (
+      color: string,
+      opacity: number,
+      metalness: number,
+    ) =>
+      make(color, 0.04, {
+        metalness,
+        envMapIntensity: 1.45,
+        transparent: true,
+        opacity,
+      });
+
     return {
       stucco: make(COL.stucco, 0.92),
       fascia: make(COL.slabFascia, 0.78),
       soffit: make(COL.soffit, 0.85),
-      /* Vidrio: rugosidad casi nula + metalness alto para que tome el
-         reflejo del cielo desde el env map procedural. Sin ese reflejo
-         el vidriado se lee como plástico. */
-      glass: make(COL.glass, 0.04, {
-        metalness: 0.86,
-        envMapIntensity: 1.35,
-        transparent: true,
-        opacity: 0.78,
-      }),
       mullion: make(COL.mullion, 0.45, { metalness: 0.35 }),
-      rail: make(COL.rail, 0.06, {
-        metalness: 0.15,
-        transparent: true,
-        opacity: 0.3,
-      }),
       ground: make(COL.ground, 0.9),
       green: make(COL.green, 1),
       accent: make(COL.accent, 0.6),
+
+      /* Interior detrás del vidriado. Sin un plano opaco atrás, el vidrio
+         semitransparente mostraba el cielo del otro lado y el edificio se
+         leía hueco. Con esto hay profundidad detrás de cada paño. */
+      interior: make(COL.interior, 0.95),
+      interiorLit: make(COL.interiorLit, 0.9),
+
+      /* --- Variantes de vidriado por estado --- */
+      glassBase: glass(COL.glass, 0.78, 0.86),
+      glassEmph: glass(COL.glassLit, 0.9, 0.4),
+      glassDim: glass(COL.glass, 0.14, 0.86),
+
+      /* --- Variantes de losa por estado --- */
+      slabBase: make(COL.slabFascia, 0.78),
+      slabEmph: make(COL.accent, 0.7),
+      slabDim: make(COL.slabFascia, 0.78, { transparent: true, opacity: 0.3 }),
+
+      /* --- Variantes de baranda --- */
+      railBase: make(COL.rail, 0.05, {
+        metalness: 0.12,
+        transparent: true,
+        opacity: 0.32,
+      }),
+      railDim: make(COL.rail, 0.05, {
+        metalness: 0.12,
+        transparent: true,
+        opacity: 0.08,
+      }),
     };
   }, []);
 
@@ -129,13 +169,20 @@ export function ArchitecturalMassing({
   const geo = useMemo(
     () => ({
       slab: new THREE.BoxGeometry(W + CANTILEVER * 2, SLAB_T, D * 0.52),
+      slabReturn: new THREE.BoxGeometry(CANTILEVER, SLAB_T, D * 0.4),
       glazing: new THREE.BoxGeometry(W * 0.94, FLOOR_H * 0.78, D * 0.42),
+      interior: new THREE.PlaneGeometry(W * 0.9, FLOOR_H * 0.7),
+      mullion: new THREE.BoxGeometry(0.016, FLOOR_H * 0.78, 0.016),
       rail: new THREE.BoxGeometry(W + CANTILEVER * 2 - 0.03, RAIL_H, 0.012),
       railSide: new THREE.BoxGeometry(0.012, RAIL_H, D * 0.5),
       pick: new THREE.BoxGeometry(W + CANTILEVER * 2, FLOOR_H * 0.95, D * 0.6),
     }),
     [],
   );
+
+  useMemo(() => {
+    return () => Object.values(geo).forEach((g) => g.dispose());
+  }, [geo]);
 
   const floorY = (level: number, ex: number) =>
     GROUND_H + (level - 0.5) * FLOOR_H + ex * 0.3 * (level - 1);
@@ -150,7 +197,6 @@ export function ArchitecturalMassing({
 
     extractNow.current += (extract - extractNow.current) * k;
 
-    // El scroll puede alimentar explode por ref (continuo) o por prop
     const explodeTarget = explodeRef?.current ?? explode;
     explodeNow.current += (explodeTarget - explodeNow.current) * k;
     const ex = explodeNow.current;
@@ -162,7 +208,6 @@ export function ArchitecturalMassing({
       node.position.y = floorY(level, ex) + e * 0.2;
     });
 
-    // El penthouse y el remate acompañan la separación
     if (crownRef.current) {
       crownRef.current.position.y = GROUND_H + towerH + ex * 0.3 * towerFloors;
     }
@@ -171,10 +216,11 @@ export function ArchitecturalMassing({
         GROUND_H + towerH + FLOOR_H + 0.16 + ex * 0.3 * towerFloors;
     }
 
-    // Presencia mínima — se detiene cuando hay un piso seleccionado
     if (group.current) {
       const target =
-        active == null ? Math.sin(state.clock.elapsedTime * 0.055) * 0.014 : 0;
+        idleSway && active == null
+          ? Math.sin(state.clock.elapsedTime * 0.055) * 0.014
+          : 0;
       group.current.rotation.y +=
         (target - group.current.rotation.y) * (1 - Math.exp(-1.8 * d));
     }
@@ -186,61 +232,72 @@ export function ArchitecturalMassing({
           BASAMENTO — planta baja retranqueada, acceso y cochera
           ========================================================== */}
       <group>
-        {/* Volumen vidriado retranqueado respecto de la losa superior */}
-        <mesh position={[0, GROUND_H / 2, 0]} castShadow receiveShadow>
+        <mesh
+          position={[0, GROUND_H / 2, 0]}
+          castShadow
+          receiveShadow
+          material={mat.glassBase}
+        >
           <boxGeometry args={[W * 0.88, GROUND_H, D * 0.9]} />
-          <primitive object={mat.glass} attach="material" />
         </mesh>
 
-        {/* Columnas del retranqueo — dan el pórtico del acceso */}
+        {/* Lobby: paño interior iluminado detrás del vidriado de PB.
+            Es la lectura de "hay algo adentro" al nivel del peatón. */}
+        <mesh
+          position={[0, GROUND_H * 0.5, D * 0.4]}
+          material={mat.interiorLit}
+        >
+          <planeGeometry args={[W * 0.8, GROUND_H * 0.72]} />
+        </mesh>
+
         {[-1, 1].map((s) => (
           <mesh
             key={s}
             position={[s * (W / 2 - 0.055), GROUND_H / 2, D * 0.26]}
             castShadow
+            material={mat.ground}
           >
             <boxGeometry args={[0.09, GROUND_H, 0.09]} />
-            <primitive object={mat.ground} attach="material" />
           </mesh>
         ))}
 
-        {/* Núcleo de acceso — paño macizo lateral */}
         <mesh
           position={[-W * 0.28, GROUND_H / 2, D * 0.2]}
           castShadow
           receiveShadow
+          material={mat.ground}
         >
           <boxGeometry args={[W * 0.3, GROUND_H, 0.1]} />
-          <primitive object={mat.ground} attach="material" />
         </mesh>
 
-        {/* Gran losa de transición sobre planta baja */}
-        <mesh position={[0, GROUND_H, D * 0.06]} castShadow receiveShadow>
+        <mesh
+          position={[0, GROUND_H, D * 0.06]}
+          castShadow
+          receiveShadow
+          material={mat.fascia}
+        >
           <boxGeometry args={[W + CANTILEVER * 2, SLAB_T * 1.5, D * 0.62]} />
-          <primitive object={mat.fascia} attach="material" />
         </mesh>
       </group>
 
       {/* ==========================================================
-          MEDIANERA CIEGA — paño macizo lateral + fondo, sin aberturas.
-          Es el elemento que le da la silueta característica a la torre.
+          MEDIANERA CIEGA — silueta característica de la torre
           ========================================================== */}
       <mesh
         position={[W / 2 + 0.06, (totalH + PARTY_EXTRA) / 2, -D * 0.06]}
         castShadow
         receiveShadow
+        material={mat.stucco}
       >
         <boxGeometry args={[0.12, totalH + PARTY_EXTRA, D * 0.98]} />
-        <primitive object={mat.stucco} attach="material" />
       </mesh>
-      {/* Retorno de fondo */}
       <mesh
         position={[0, (totalH + PARTY_EXTRA * 0.55) / 2, -D / 2]}
         castShadow
         receiveShadow
+        material={mat.stucco}
       >
         <boxGeometry args={[W + 0.12, totalH + PARTY_EXTRA * 0.55, 0.12]} />
-        <primitive object={mat.stucco} attach="material" />
       </mesh>
 
       {/* ==========================================================
@@ -253,6 +310,20 @@ export function ArchitecturalMassing({
         const isHovered = hoveredFloor === level;
         const emphasised = active || isSelectedFloor || isHovered;
         const dimmed = dimOthers && !emphasised;
+
+        /* Selección de material: referencias ya existentes, sin crear nada.
+           Esto es lo que hace que el hover no cueste. */
+        const glassMat = dimmed
+          ? mat.glassDim
+          : emphasised
+            ? mat.glassEmph
+            : mat.glassBase;
+        const slabMat = dimmed
+          ? mat.slabDim
+          : emphasised
+            ? mat.slabEmph
+            : mat.slabBase;
+        const railMat = dimmed ? mat.railDim : mat.railBase;
 
         return (
           <group
@@ -269,8 +340,6 @@ export function ArchitecturalMassing({
                 geometry={geo.pick}
                 position={[0, FLOOR_H * 0.35, D * 0.1]}
                 visible={false}
-                /* En táctil no hay hover: el primer contacto ya marca el
-                   nivel para que el usuario vea cuál va a seleccionar. */
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   onHoverFloor?.(level);
@@ -287,78 +356,59 @@ export function ArchitecturalMassing({
               />
             ) : null}
 
+            {/* Interior: plano opaco detrás del vidriado.
+                El nivel destacado lo muestra iluminado — la unidad que se
+                está mirando se lee habitada. */}
+            {!lite && (
+              <mesh
+                geometry={geo.interior}
+                position={[0, FLOOR_H * 0.42, -D * 0.16]}
+                material={emphasised ? mat.interiorLit : mat.interior}
+              />
+            )}
+
             {/* Paño vidriado, retirado detrás del balcón */}
             <mesh
               geometry={geo.glazing}
               position={[0, FLOOR_H * 0.42, -D * 0.06]}
               castShadow={!lite}
-            >
-              <meshStandardMaterial
-                color={emphasised ? COL.glassLit : COL.glass}
-                roughness={0.04}
-                metalness={emphasised ? 0.4 : 0.86}
-                envMapIntensity={1.35}
-                transparent
-                opacity={dimmed ? 0.14 : emphasised ? 0.9 : 0.78}
-              />
-            </mesh>
+              material={glassMat}
+            />
 
             {/* Montantes verticales del vidriado */}
             {!lite &&
               [-0.32, 0, 0.32].map((f) => (
                 <mesh
                   key={f}
+                  geometry={geo.mullion}
                   position={[f * W, FLOOR_H * 0.42, D * 0.15]}
                   castShadow={false}
-                >
-                  <boxGeometry args={[0.016, FLOOR_H * 0.78, 0.016]} />
-                  <primitive object={mat.mullion} attach="material" />
-                </mesh>
+                  material={mat.mullion}
+                />
               ))}
 
-            {/* LOSA DE BALCÓN — vuela al frente y dobla hacia el lateral.
-                Es el gesto dominante de la fachada. */}
+            {/* LOSA DE BALCÓN — el gesto dominante de la fachada */}
             <mesh
               geometry={geo.slab}
               position={[0, 0, D * 0.16]}
               castShadow={!lite}
               receiveShadow
-            >
-              <meshStandardMaterial
-                color={emphasised ? COL.accent : COL.slabFascia}
-                roughness={0.78}
-                transparent
-                opacity={dimmed ? 0.3 : 1}
-              />
-            </mesh>
-            {/* Retorno lateral de la losa (dobla la esquina) */}
+              material={slabMat}
+            />
             <mesh
+              geometry={geo.slabReturn}
               position={[-(W / 2 + CANTILEVER / 2), 0, -D * 0.1]}
               castShadow={!lite}
               receiveShadow
-            >
-              <boxGeometry args={[CANTILEVER, SLAB_T, D * 0.4]} />
-              <meshStandardMaterial
-                color={emphasised ? COL.accent : COL.slabFascia}
-                roughness={0.78}
-                transparent
-                opacity={dimmed ? 0.3 : 1}
-              />
-            </mesh>
+              material={slabMat}
+            />
 
             {/* Baranda de vidrio frameless sobre el borde de losa */}
             <mesh
               geometry={geo.rail}
               position={[0, RAIL_H / 2 + SLAB_T / 2, D * 0.16 + D * 0.26]}
-            >
-              <meshStandardMaterial
-                color={COL.rail}
-                roughness={0.05}
-                metalness={0.12}
-                transparent
-                opacity={dimmed ? 0.08 : 0.32}
-              />
-            </mesh>
+              material={railMat}
+            />
             <mesh
               geometry={geo.railSide}
               position={[
@@ -366,15 +416,8 @@ export function ArchitecturalMassing({
                 RAIL_H / 2 + SLAB_T / 2,
                 -D * 0.08,
               ]}
-            >
-              <meshStandardMaterial
-                color={COL.rail}
-                roughness={0.05}
-                metalness={0.12}
-                transparent
-                opacity={dimmed ? 0.08 : 0.32}
-              />
-            </mesh>
+              material={railMat}
+            />
           </group>
         );
       })}
@@ -383,24 +426,19 @@ export function ArchitecturalMassing({
           PENTHOUSE — retiro superior con parapeto y vegetación
           ========================================================== */}
       <group ref={crownRef} position={[0, GROUND_H + towerH, 0]}>
-        {/* Volumen retirado respecto de la línea de fachada */}
         <mesh
           position={[0, FLOOR_H * 0.5, -D * 0.14]}
           castShadow
           receiveShadow
+          material={mat.stucco}
         >
           <boxGeometry args={[W * 0.82, FLOOR_H, D * 0.5]} />
-          <primitive object={mat.stucco} attach="material" />
         </mesh>
-        {/* Vidriado del penthouse */}
-        <mesh position={[0, FLOOR_H * 0.5, D * 0.11]}>
+        <mesh position={[0, FLOOR_H * 0.5, D * 0.11]} material={mat.glassBase}>
           <boxGeometry args={[W * 0.78, FLOOR_H * 0.7, 0.03]} />
-          <primitive object={mat.glass} attach="material" />
         </mesh>
-        {/* Terraza del retiro */}
-        <mesh position={[0, 0.01, D * 0.24]} receiveShadow>
+        <mesh position={[0, 0.01, D * 0.24]} receiveShadow material={mat.fascia}>
           <boxGeometry args={[W * 0.9, SLAB_T * 0.7, D * 0.24]} />
-          <primitive object={mat.fascia} attach="material" />
         </mesh>
         {/* Jardineras — la vegetación que desborda en los renders */}
         {!lite &&
@@ -409,9 +447,9 @@ export function ArchitecturalMassing({
               key={f}
               position={[f * W, 0.075, D * 0.3]}
               castShadow
+              material={mat.green}
             >
               <boxGeometry args={[W * 0.24, 0.11, 0.13]} />
-              <primitive object={mat.green} attach="material" />
             </mesh>
           ))}
       </group>
@@ -422,9 +460,9 @@ export function ArchitecturalMassing({
         position={[-W * 0.1, GROUND_H + towerH + FLOOR_H + 0.16, -D * 0.2]}
         castShadow
         receiveShadow
+        material={mat.stucco}
       >
         <boxGeometry args={[W * 0.55, 0.32, D * 0.34]} />
-        <primitive object={mat.stucco} attach="material" />
       </mesh>
     </group>
   );

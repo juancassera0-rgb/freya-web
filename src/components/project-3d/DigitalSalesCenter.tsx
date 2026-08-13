@@ -15,10 +15,13 @@ import {
 } from "@/data/project3d";
 import { PlanSVG } from "./PlanSVG";
 import { RenderViewer } from "./RenderViewer";
+import { SceneTouchGate } from "./SceneTouchGate";
 import { usePerfFlags } from "./useClientFlags";
 import { useCanvasActive } from "./useCanvasActive";
+import { useSceneTouch } from "./useSceneTouch";
+import { useStableStageSize } from "./useStableStageSize";
 import { FRAMING, useViewportClass } from "./useViewportClass";
-import type { SalesStage } from "./SalesCenterScene";
+import type { SalesStage, SceneHandle } from "./SalesCenterScene";
 import styles from "./DigitalSalesCenter.module.css";
 
 /**
@@ -45,12 +48,26 @@ const STATUS_LABEL: Record<ProjectUnit["status"], string> = {
  * Explorador comercial completo: edificio → piso → unidad → espacio → render.
  *
  * Una sola escena WebGL sostiene las tres etapas, por eso las transiciones
- * son continuas: al elegir un piso la losa se extrae del volumen y la cámara
- * la sigue; al abrir una unidad, la planta se lee como dibujo técnico y el
- * slider la eleva hasta volumen usando la misma geometría.
+ * son continuas.
+ *
+ * ---------------------------------------------------------------------
+ * MÓVIL — tres piezas nuevas, cada una resolviendo un síntoma concreto:
+ *
+ * · useSceneTouch      intercepta los gestos de iOS antes que Safari, así
+ *                      el pinch acerca la cámara en vez de zoomear la
+ *                      página. Es el arreglo del "se acerca solo".
+ * · useStableStageSize fija la altura del contenedor, para que la barra de
+ *                      direcciones no redimensione el canvas al scrollear.
+ * · SceneTouchGate     hace explícito quién tiene el gesto: hasta que el
+ *                      usuario toca la escena, el dedo scrollea.
+ * ---------------------------------------------------------------------
  */
 export function DigitalSalesCenter({ config, projectName }: Props) {
   const rootRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  /** Handle imperativo del dolly, publicado desde dentro del Canvas */
+  const sceneHandle = useRef<SceneHandle>(null);
+
   const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
   const framing = FRAMING[useViewportClass()];
 
@@ -62,16 +79,42 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
   const [morph, setMorph] = useState(0.35);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [viewerRoom, setViewerRoom] = useState<PlanRoom | null>(null);
-  /** Se activa si el contexto WebGL se pierde sin recuperarse */
   const [contextLost, setContextLost] = useState(false);
+
+  /**
+   * ¿La escena tiene el gesto?
+   * En puntero fino, siempre. En táctil sólo tras un tap explícito.
+   */
+  const [touchEngaged, setTouchEngaged] = useState(false);
+
+  /* La escena suelta el gesto al salir del viewport: si el usuario sigue
+     bajando, no queda un canvas activo capturando el dedo más arriba.
+
+     El patch lo hacía con `useEffect(() => { if (!active) setTouchEngaged(false) })`,
+     que el lint rechaza (setState síncrono en efecto). Se reemplaza por el
+     ajuste de estado durante el render que React documenta para este caso
+     exacto: se compara con el valor anterior y se corrige antes de pintar,
+     sin pasar por un ciclo extra de commit.
+     https://react.dev/learn/you-might-not-need-an-effect */
+  const [prevActive, setPrevActive] = useState(active);
+  if (prevActive !== active) {
+    setPrevActive(active);
+    if (!active && touchEngaged) setTouchEngaged(false);
+  }
+
+  const interactive = touch ? touchEngaged : true;
+
+  const handlePinch = useCallback((factor: number) => {
+    sceneHandle.current?.dolly(factor);
+  }, []);
+
+  useSceneTouch(stageRef, { interactive, onPinch: handlePinch });
+
+  /* Altura fija sólo en táctil: en desktop no hay barra que aparezca. */
+  const stageHeight = useStableStageSize(stageRef, { enabled: touch });
 
   const canRender3D = webglOk && !reducedMotion && !contextLost;
 
-  /**
-   * Objetivo de extracción de la losa. La interpolación ocurre dentro del
-   * canvas (useFrame + ref en ArchitecturalMassing), así que esto es un
-   * valor discreto: cambia una vez por etapa, no 60 veces por segundo.
-   */
   const extractTarget = stage === "building" ? 0 : 1;
 
   const floorUnits = useMemo(
@@ -124,16 +167,11 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
     setActiveRoomId(null);
   }, []);
 
-  /** Abre el render del ambiente si existe; si no, sólo lo resalta. */
   const handleSelectRoom = useCallback((room: PlanRoom) => {
     setActiveRoomId(room.id);
     if (room.renderSrc) setViewerRoom(room);
   }, []);
 
-  /**
-   * Hotspot del edificio → render de espacio común, si el proyecto lo tiene.
-   * Se reutiliza el visor tratando el espacio común como un "ambiente".
-   */
   const openCommonRender = useCallback(
     (hotspotId: string) => {
       const found = config.commonRenders?.find((r) => r.id === hotspotId);
@@ -154,7 +192,6 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
     [config.commonRenders, config.hotspots],
   );
 
-  /** Vuelta desde el render al plano, con el ambiente resaltado. */
   const handleViewerBackToPlan = useCallback(() => {
     setViewerRoom((room) => {
       if (room) setActiveRoomId(room.id);
@@ -376,7 +413,14 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
         </aside>
 
         {/* ---------- Escena central ---------- */}
-        <div className={styles.stage} data-cursor={lite ? undefined : "Explorar"}>
+        <div
+          ref={stageRef}
+          className={styles.stage}
+          data-cursor={lite ? undefined : "Explorar"}
+          data-engaged={interactive ? "true" : "false"}
+          /* Altura fija en táctil — ver useStableStageSize */
+          style={stageHeight ? { height: stageHeight } : undefined}
+        >
           {mounted && canRender3D ? (
             <SalesCenterCanvas
               config={config}
@@ -386,6 +430,8 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
               lite={lite}
               framing={framing}
               active={active && !viewerRoom}
+              interactive={interactive}
+              handleRef={sceneHandle}
               onContextLost={() => setContextLost(true)}
               selectedFloor={selectedFloor}
               hoveredFloor={hoveredFloor}
@@ -413,11 +459,25 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
             </div>
           )}
 
+          {/* Gate táctil: sólo en puntero grueso y con la escena montada */}
+          {touch && mounted && canRender3D && (
+            <SceneTouchGate
+              active={touchEngaged}
+              onActivate={() => setTouchEngaged(true)}
+              onRelease={() => setTouchEngaged(false)}
+              label={
+                stage === "building"
+                  ? "Tocá para explorar el edificio"
+                  : "Tocá para explorar"
+              }
+            />
+          )}
+
           {/* Etiqueta de etapa sobre la escena */}
           <p className={styles.stageTag}>{stageLabel}</p>
 
-          {/* Feedback de hover sobre el edificio */}
-          {stage === "building" && hoveredFloor != null && (
+          {/* Feedback de hover sobre el edificio — sin sentido en táctil */}
+          {!touch && stage === "building" && hoveredFloor != null && (
             <p className={styles.hoverTag}>
               Piso {hoveredFloor} ·{" "}
               {getUnitsForFloor(config, hoveredFloor).length} unidades
@@ -454,8 +514,6 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
       {/* ---------- Render fullscreen ---------- */}
       {viewerRoom?.renderSrc ? (
         (() => {
-          // Un render de espacio común no pertenece a una planta:
-          // navega entre comunes y no ofrece "ver en plano".
           const isCommon = !renderRooms.some((r) => r.id === viewerRoom.id);
           const commonRooms: PlanRoom[] = (config.commonRenders ?? []).map(
             (cr) => ({
@@ -475,9 +533,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
           return (
             <RenderViewer
               room={viewerRoom}
-              unitCode={
-                isCommon ? projectName : (selectedUnit?.code ?? "")
-              }
+              unitCode={isCommon ? projectName : (selectedUnit?.code ?? "")}
               rooms={isCommon ? commonRooms : renderRooms}
               onNavigate={(room) => {
                 setViewerRoom(room);

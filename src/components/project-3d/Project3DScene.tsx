@@ -56,8 +56,6 @@ export function Project3DScene({
   const lite = performanceMode === "lite";
   const low = tier === "low";
   const high = tier === "high";
-  /* El hero representa el atardecer (como el render del proyecto); el
-     recorrido y el explorador, luz de día plena. */
   const sceneMood: SceneMood = isHero ? "dusk" : "day";
   const mood = {
     ...MOOD[sceneMood],
@@ -83,12 +81,13 @@ export function Project3DScene({
           start.position[1] * framing.distance,
           start.position[2] * framing.distance,
         ],
-        /* FOV por clase de pantalla: la torre es alta y estrecha, así que
-           en viewports angostos o bajos hay que abrir el ángulo o queda
-           cortada. El hero usa un ángulo levemente más cerrado. */
         fov: isHero ? framing.fov - 2 : framing.fov,
-        near: 0.1,
-        far: 48,
+        /* near 0.35 y far 34: rango de profundidad ajustado a la escena
+           real. Con near 0.1 y far 48 se desperdiciaba precisión de
+           z-buffer en un rango que nada ocupa, y eso se veía como
+           parpadeo entre losas y barandas en ángulos rasantes. */
+        near: 0.35,
+        far: 34,
       }}
       shadows={low ? false : "soft"}
       onCreated={({ gl }) => {
@@ -100,20 +99,28 @@ export function Project3DScene({
       <color attach="background" args={[mood.horizon]} />
       <fog attach="fog" args={[mood.horizon, mood.fogNear, mood.fogFar]} />
 
-      {/* Cielo procedural — también alimenta los reflejos del vidriado */}
-      <SkyDome mood={sceneMood} clouds={!low} />
+      {/* Cielo procedural con halo solar — también alimenta los reflejos
+          del vidriado a través de ProceduralEnvironment */}
+      <SkyDome mood={sceneMood} clouds={!low} detail={tier} />
       {!low && <ProceduralEnvironment mood={sceneMood} />}
 
-      {/* Luz clave: sol. Su color e intensidad siguen la hora representada */}
+      {/* Luz clave: sol. Su dirección coincide con SUN[mood].dir, que es
+          donde SkyDome dibuja el halo: si se desincronizan, el resplandor
+          queda de un lado y las sombras caen del otro. */}
       <directionalLight
         castShadow={!low}
         position={isHero ? [7, 5.5, 5] : [6, 9, 4]}
         intensity={mood.keyIntensity}
         color={mood.key}
         shadow-mapSize={high ? [1024, 1024] : [512, 512]}
-        shadow-bias={-0.0015}
+        shadow-bias={-0.0012}
+        shadow-normalBias={0.02}
       >
-        <orthographicCamera attach="shadow-camera" args={[-8, 8, 8, -8, 0.5, 26]} />
+        {/* Cámara de sombra ajustada al volumen (torre de ~4.2 sobre una
+            vereda de 3). Antes cubría ±8 unidades para un objeto de 4:
+            más de la mitad del shadow map caía en vacío. Acotarla sube
+            ~2.5× la densidad de la sombra sin agrandar el mapa. */}
+        <orthographicCamera attach="shadow-camera" args={[-5, 5, 6, -3, 1, 20]} />
       </directionalLight>
 
       {/* Relleno — rebote del cielo */}
@@ -127,10 +134,21 @@ export function Project3DScene({
           color={mood.fill}
         />
       )}
+
+      {/* Rebote cálido del suelo hacia intradoses y bajo-losas: es donde
+          una escena sin iluminación global se ve muerta. */}
+      {!low && (
+        <directionalLight
+          position={[0.5, -2.5, 3]}
+          intensity={isHero ? 0.2 : 0.16}
+          color={mood.bounce}
+        />
+      )}
+
       <ambientLight intensity={mood.ambientIntensity} color={mood.ambient} />
       <hemisphereLight args={[mood.horizon, SITE.grass, isHero ? 0.35 : 0.42]} />
 
-      {/* Emplazamiento: vereda, cordón, calzada, canteros, arbolado y vecinos */}
+      {/* Emplazamiento: vereda, cordón, calzada, canteros y arbolado */}
       <SiteContext mood={sceneMood} detail={tier} />
 
       {!low && (
@@ -147,10 +165,7 @@ export function Project3DScene({
       )}
 
       {isOrbit ? (
-        <OrbitControlsSoft
-          enabled
-          target={config.camera.overview.target}
-        />
+        <OrbitControlsSoft enabled target={config.camera.overview.target} touch={touch} />
       ) : (
         <CameraRig
           intro={config.camera.intro}

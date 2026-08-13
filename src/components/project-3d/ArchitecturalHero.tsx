@@ -9,6 +9,7 @@ import { useScrollProgress } from "@/components/experience/useScrollProgress";
 import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { usePerfFlags } from "./useClientFlags";
+import { useBlockPageZoom } from "./useBlockPageZoom";
 import { useCanvasActive } from "./useCanvasActive";
 import { FRAMING, useViewportClass } from "./useViewportClass";
 import styles from "./ArchitecturalHero.module.css";
@@ -40,6 +41,10 @@ export function ArchitecturalHero({ project, config, zones }: Props) {
   /* El 3D lee el progreso continuo por ref; React no re-renderiza al scrollear */
   const { rawRef } = useScrollProgress(sectionRef, { enabled, steps: 1 });
   const { active } = useCanvasActive(sectionRef, { rootMargin: "0px" });
+
+  /* Es lo primero que ve un visitante en el celular: dos dedos acá dejaban
+     la home zoomeada antes de haber leído una línea. */
+  useBlockPageZoom(sectionRef, touch);
 
   const year = new Date().getFullYear();
 

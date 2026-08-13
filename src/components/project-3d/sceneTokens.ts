@@ -11,11 +11,10 @@ import * as THREE from "three";
  *   Off-Black  #1D1C1B  tipografía, nunca negro puro
  *
  * Por eso el entorno NO usa verdes ni celestes de stock: cada color de
- * abajo se calcula a partir de esos tres, mezclando y ajustando
- * luminosidad. El Camo es literalmente el color "naturaleza" de la marca,
- * así que toda la vegetación sale de ahí — verde oliva apagado, no césped.
- * El cielo se construye sobre Off-White. Vereda y asfalto son grises
- * CÁLIDOS derivados de Off-Black, nunca grises azulados.
+ * abajo se calcula a partir de esos tres. El Camo es literalmente el color
+ * "naturaleza" de la marca, así que toda la vegetación sale de ahí. El
+ * cielo se construye sobre Off-White. Vereda y asfalto son grises CÁLIDOS
+ * derivados de Off-Black, nunca grises azulados.
  *
  * Si algo del entorno necesita un color nuevo, se agrega acá y se deriva
  * de la paleta. No se escriben hex sueltos en los componentes.
@@ -49,8 +48,7 @@ function shade(base: THREE.Color, amount: number): string {
  *
  * El Camo es un oliva muy desaturado: perfecto para superficies, pero la
  * vegetación con ese valor exacto se ve mustia. Esto la trae a la vida sin
- * salirse de la familia cromática — el tono sigue siendo el de la marca,
- * sólo con más vida. El hue nunca se toca.
+ * salirse de la familia cromática — el hue nunca se toca.
  */
 function vivify(base: THREE.Color, sat: number, light: number): string {
   const hsl = { h: 0, s: 0, l: 0 };
@@ -68,20 +66,31 @@ function vivify(base: THREE.Color, sat: number, light: number): string {
  */
 export const SITE = {
   /* --- Cielo: Off-White como base, apenas entibiado --- */
-  skyTopDay: shade(OFF_WHITE, -0.12), // off-white levemente bajado
+  skyTopDay: shade(OFF_WHITE, -0.14), // off-white levemente bajado
   skyHorizonDay: shade(OFF_WHITE, 0.0), // off-white puro en el horizonte
   skyTopDusk: mix(OFF_BLACK, CAMO, 0.35), // noche cálida con base camo
   skyHorizonDusk: mix(CAMO, OFF_WHITE, 0.62), // resplandor bajo, arena
 
   /* --- Vegetación: matiz del Camo, con vida ---
-     Mismo hue que el color "naturaleza" de la marca, pero con saturación
-     y luz suficientes para que el follaje se lea vivo y no mustio. */
+     Se ampliaron los tonos a cinco. Con tres, el follaje instanciado
+     mostraba repetición evidente en cuanto había más de tres árboles;
+     con cinco la copa se lee modulada y el barrio deja de parecer un
+     patrón. Todos comparten el hue del Camo. */
   grass: vivify(CAMO, 0.14, 0.04), // césped del cantero
   grassLight: vivify(CAMO, 0.18, 0.13), // borde iluminado
+  foliageDeep: vivify(CAMO, 0.16, -0.02), // masa interior, en sombra
   foliage: vivify(CAMO, 0.2, 0.06), // copa en sombra
   foliageMid: vivify(CAMO, 0.26, 0.14), // copa media
-  foliageLight: vivify(CAMO, 0.3, 0.22), // copa al sol
+  foliageLight: vivify(CAMO, 0.32, 0.22), // copa al sol
+  foliageSun: vivify(CAMO, 0.36, 0.3), // remate, punto de máxima luz
   trunk: mix(OFF_BLACK, CAMO, 0.5), // tronco: marrón cálido de marca
+  /* Arbolado lejano: la silueta se desatura y se aclara con la distancia.
+     Es niebla aérea resuelta en el color, no un efecto extra. */
+  /* `vivify` devuelve un hex y `mix` opera sobre THREE.Color: hay que
+     reconstruir el color antes de mezclarlo con el off-white.
+     (El patch pasaba el string directo y no compilaba.) */
+  treeLineFar: mix(new THREE.Color(vivify(CAMO, 0.06, 0.16)), OFF_WHITE, 0.52),
+  treeLineNear: mix(new THREE.Color(vivify(CAMO, 0.1, 0.1)), OFF_WHITE, 0.34),
 
   /* --- Suelo urbano: grises CÁLIDOS desde Off-Black --- */
   sidewalk: mix(OFF_BLACK, OFF_WHITE, 0.68), // vereda clara
@@ -103,6 +112,31 @@ export const SITE = {
   mullion: mix(OFF_BLACK, CAMO, 0.25), // montantes
   rail: mix(OFF_WHITE, CAMO, 0.16), // baranda de vidrio
   groundFloor: mix(OFF_BLACK, OFF_WHITE, 0.62), // basamento
+  /* Interior visible detrás del vidriado: sin esto, los paños se leen como
+     espejos opacos y el edificio parece deshabitado. */
+  interior: mix(OFF_BLACK, OFF_WHITE, 0.46),
+  interiorLit: mix(CAMO, OFF_WHITE, 0.7),
+} as const;
+
+/**
+ * SOL — dirección y halo.
+ *
+ * La dirección debe coincidir con la `directionalLight` clave de cada
+ * escena; el SkyDome dibuja el halo ahí. Cuando se mueva la luz, se mueve
+ * este vector: si se desincronizan, el halo aparece en un lado y las
+ * sombras caen del otro, y la escena deja de leerse creíble.
+ */
+export const SUN = {
+  day: {
+    dir: [6, 9, 4] as [number, number, number],
+    halo: mix(OFF_WHITE, CAMO, 0.07), // blanco apenas cálido
+    strength: 0.55,
+  },
+  dusk: {
+    dir: [7, 5.5, 5] as [number, number, number],
+    halo: mix(CAMO, OFF_WHITE, 0.72), // resplandor arena
+    strength: 0.9,
+  },
 } as const;
 
 /** Ambiente lumínico según la hora representada */
@@ -111,6 +145,9 @@ export const MOOD = {
     key: shade(OFF_WHITE, 0.0), // sol neutro y limpio
     fill: mix(OFF_WHITE, CAMO, 0.1), // relleno frío-neutro
     ambient: mix(OFF_WHITE, CAMO, 0.14),
+    /* Rebote del suelo: cálido y tenue. Ilumina intradoses de balcón y
+       bajo-losas, que es donde una escena sin GI se ve muerta. */
+    bounce: mix(CAMO, OFF_WHITE, 0.55),
     keyIntensity: 1.85,
     ambientIntensity: 0.34,
     exposure: 1.1,
@@ -121,6 +158,7 @@ export const MOOD = {
     key: mix(OFF_WHITE, CAMO, 0.28), // sol bajo, cálido
     fill: mix(OFF_BLACK, CAMO, 0.5),
     ambient: mix(OFF_BLACK, CAMO, 0.42),
+    bounce: mix(CAMO, OFF_WHITE, 0.35),
     keyIntensity: 1.5,
     ambientIntensity: 0.26,
     exposure: 1.16,

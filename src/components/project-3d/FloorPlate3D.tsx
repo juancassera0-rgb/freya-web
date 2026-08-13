@@ -6,6 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { PlanRoom, UnitPlan } from "@/data/planGeometry";
 import { RoomFurniture } from "./RoomFurniture";
+import { BRAND, SITE } from "./sceneTokens";
 import styles from "./FloorPlate3D.module.css";
 
 type Props = {
@@ -23,31 +24,31 @@ const PLATE_W = 3.2;
 const WALL_H = 0.52;
 const WALL_T = 0.045;
 
-/**
- * En dispositivos limitados sólo se etiquetan los ambientes accionables
- * (los que tienen render). Cada etiqueta cuesta un nodo DOM actualizado
- * por frame.
- */
 function showLabel(_id: string, hasRender: boolean, lite: boolean) {
   return lite ? hasRender : true;
 }
 
+/**
+ * Colores de solado por tipo de ambiente.
+ *
+ * Antes eran hex sueltos en este archivo, fuera del sistema de marca. Ahora
+ * salen de sceneTokens: mismos valores de familia, una sola fuente. Si se
+ * cambia la paleta, la planta acompaña.
+ */
 const ROOM_COLORS: Record<string, string> = {
-  living: "#d8d2c2",
-  cocina: "#cfc9b8",
-  dormitorio: "#ded8c9",
-  bano: "#c6c0b0",
-  balcon: "#c4b79a",
-  circulacion: "#d4d0c6",
+  living: SITE.soffit,
+  cocina: SITE.slabFascia,
+  dormitorio: SITE.soffit,
+  bano: SITE.curb,
+  balcon: SITE.slabFascia,
+  circulacion: SITE.sidewalk,
 };
 
 /**
  * Planta volumétrica generada desde la MISMA geometría que el plano 2D.
  *
  * `morph` controla la altura de los muros: en 0 la planta se lee como
- * dibujo técnico apoyado en el piso; en 1 los muros están extruidos y el
- * espacio se lee como volumen. La transición es continua porque los
- * rectángulos de origen son idénticos.
+ * dibujo técnico apoyado en el piso; en 1 los muros están extruidos.
  */
 export function FloorPlate3D({
   plan,
@@ -63,14 +64,31 @@ export function FloorPlate3D({
   const plateH = PLATE_W / plan.aspect;
 
   /**
-   * Altura de muro interpolada dentro del canvas. El slider actualiza el
-   * objetivo; la escala se aplica por ref en useFrame, así arrastrar no
-   * dispara reconciliación de React por frame.
+   * MUROS: registro por Set con limpieza, no por índice incremental.
+   *
+   * La versión anterior usaba `wallRefs.current[wallIndex++]` con un
+   * contador `let` declarado en el cuerpo del render. Eso tenía un bug
+   * silencioso: React sólo vuelve a invocar el ref callback de los nodos
+   * que cambian, mientras que el contador se reinicia en CADA render. Al
+   * pasar el mouse por un ambiente, unos pocos callbacks se disparaban con
+   * el contador en cero y sobrescribían las posiciones de otros muros; el
+   * resto del array quedaba con referencias viejas. El síntoma era muros
+   * que dejaban de acompañar el slider, o lo hacían a saltos.
+   *
+   * Un Set con función de limpieza (React 19 la soporta en ref callbacks)
+   * no depende del orden ni de cuántos callbacks se disparen.
    */
-  const wallRefs = useRef<THREE.Mesh[]>([]);
+  const walls = useRef<Set<THREE.Mesh>>(new Set());
+  const registerWall = (n: THREE.Mesh | null) => {
+    if (!n) return;
+    walls.current.add(n);
+    return () => {
+      walls.current.delete(n);
+    };
+  };
+
   const morphNow = useRef(morph);
 
-  // Convierte rect normalizado → coordenadas de escena centradas
   const toScene = useMemo(
     () => (r: { x: number; y: number; w: number; h: number }) => ({
       cx: (r.x + r.w / 2 - 0.5) * PLATE_W,
@@ -81,17 +99,93 @@ export function FloorPlate3D({
     [plateH],
   );
 
+  /* ------------------------------------------------------------------
+     MATERIALES COMPARTIDOS CON VARIANTES DE ESTADO.
+
+     Mismo problema que tenía el edificio, y por la misma razón: los
+     `<meshStandardMaterial>` estaban inline dentro del map de ambientes.
+     Con seis ambientes son ~18 materiales que React reasignaba en cada
+     re-render — y acá los re-renders son constantes, porque el hover sobre
+     un ambiente y el arrastre del slider ambos disparan setState.
+
+     Ahora: un material de solado por tipo de ambiente (creados una vez),
+     más las variantes destacada y atenuada compartidas por todos. El
+     hover elige una referencia existente.
+     ------------------------------------------------------------------ */
+  const mat = useMemo(() => {
+    const m = (
+      color: string,
+      roughness: number,
+      opts: Partial<THREE.MeshStandardMaterialParameters> = {},
+    ) => new THREE.MeshStandardMaterial({ color, roughness, ...opts });
+
+    /* Un solado por tipo, translúcido para que se lea el dibujo debajo */
+    const floors: Record<string, THREE.MeshStandardMaterial> = {};
+    for (const [kind, color] of Object.entries(ROOM_COLORS)) {
+      floors[kind] = m(color, 0.9, { transparent: true, opacity: 0.75 });
+    }
+
+    return {
+      floors,
+      floorFallback: m(SITE.sidewalk, 0.9, { transparent: true, opacity: 0.75 }),
+      base: m("#e8e4dc", 0.85),
+      wall: m(SITE.stucco, 0.8),
+      wallEmph: m(SITE.soffit, 0.8),
+      rail: m(SITE.rail, 0.45, {
+        metalness: 0.25,
+        transparent: true,
+        opacity: 0.55,
+      }),
+    };
+  }, []);
+
+  /* Solado destacado: Camo de marca — el mismo color con el que se resalta
+     la losa en el edificio. La continuidad entre escalas es intencional. */
+  const emphFloor = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: BRAND.camo,
+        roughness: 0.9,
+        transparent: true,
+        opacity: 0.92,
+      }),
+    [],
+  );
+
+  useMemo(() => {
+    return () => {
+      Object.values(mat.floors).forEach((m) => m.dispose());
+      mat.floorFallback.dispose();
+      mat.base.dispose();
+      mat.wall.dispose();
+      mat.wallEmph.dispose();
+      mat.rail.dispose();
+      emphFloor.dispose();
+    };
+  }, [mat, emphFloor]);
+
+  /* ---------- Geometrías compartidas ---------- */
+  const geo = useMemo(
+    () => ({
+      base: new THREE.BoxGeometry(PLATE_W + 0.18, 0.06, plateH + 0.18),
+    }),
+    [plateH],
+  );
+
+  useMemo(() => {
+    return () => Object.values(geo).forEach((g) => g.dispose());
+  }, [geo]);
+
   useFrame((_, delta) => {
     const k = 1 - Math.exp(-6 * Math.min(delta, 0.1));
     morphNow.current += (morph - morphNow.current) * k;
 
     // Escala vertical de los muros desde su base
     const h = Math.max(0.001, morphNow.current);
-    for (const wall of wallRefs.current) {
-      if (!wall) continue;
+    walls.current.forEach((wall) => {
       wall.scale.y = h;
       wall.position.y = (h * WALL_H) / 2;
-    }
+    });
 
     if (group.current) {
       group.current.rotation.y +=
@@ -99,24 +193,21 @@ export function FloorPlate3D({
     }
   });
 
-  /** Altura nominal: los muros se crean a altura plena y se escalan por ref. */
   const wallHeight = WALL_H;
-  let wallIndex = 0;
 
   return (
     <group ref={group} position={[0, 0, 0]}>
       {/* Losa base */}
       <mesh
+        geometry={geo.base}
+        material={mat.base}
         position={[0, -0.03, 0]}
         receiveShadow
         onPointerMissed={() => {
           setHovered(null);
           onHoverRoom(null);
         }}
-      >
-        <boxGeometry args={[PLATE_W + 0.18, 0.06, plateH + 0.18]} />
-        <meshStandardMaterial color="#e8e4dc" roughness={0.85} />
-      </mesh>
+      />
 
       {plan.rooms.map((room) => {
         const { cx, cz, w, d } = toScene(room);
@@ -126,6 +217,11 @@ export function FloorPlate3D({
         const isBalcony = room.kind === "balcon";
         const hasRender = Boolean(room.renderSrc);
 
+        const floorMat = emphasised
+          ? emphFloor
+          : (mat.floors[room.kind] ?? mat.floorFallback);
+        const wallMat = emphasised ? mat.wallEmph : mat.wall;
+
         return (
           <group key={room.id} position={[cx, 0, cz]}>
             {/* Solado del ambiente — zona clicable */}
@@ -133,7 +229,7 @@ export function FloorPlate3D({
               position={[0, 0.005, 0]}
               rotation={[-Math.PI / 2, 0, 0]}
               receiveShadow
-              /* Táctil: el contacto inicial ya resalta el ambiente */
+              material={floorMat}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 setHovered(room.id);
@@ -154,44 +250,26 @@ export function FloorPlate3D({
               }}
             >
               <planeGeometry args={[w * 0.97, d * 0.97]} />
-              <meshStandardMaterial
-                color={
-                  emphasised ? "#4f4c37" : ROOM_COLORS[room.kind] ?? "#d4d0c6"
-                }
-                roughness={0.9}
-                transparent
-                opacity={emphasised ? 0.92 : 0.75}
-              />
             </mesh>
 
             {/* Muros perimetrales extruidos — se elevan con el morph */}
             {!isBalcony && (
               <>
                 <mesh
-                  ref={(n) => {
-                    if (n) wallRefs.current[wallIndex++] = n;
-                  }}
+                  ref={registerWall}
                   position={[0, wallHeight / 2, -d / 2]}
                   castShadow
+                  material={wallMat}
                 >
                   <boxGeometry args={[w, wallHeight, WALL_T]} />
-                  <meshStandardMaterial
-                    color={emphasised ? "#6b6749" : "#f0ece2"}
-                    roughness={0.8}
-                  />
                 </mesh>
                 <mesh
-                  ref={(n) => {
-                    if (n) wallRefs.current[wallIndex++] = n;
-                  }}
+                  ref={registerWall}
                   position={[-w / 2, wallHeight / 2, 0]}
                   castShadow
+                  material={wallMat}
                 >
                   <boxGeometry args={[WALL_T, wallHeight, d]} />
-                  <meshStandardMaterial
-                    color={emphasised ? "#6b6749" : "#f0ece2"}
-                    roughness={0.8}
-                  />
                 </mesh>
               </>
             )}
@@ -199,26 +277,17 @@ export function FloorPlate3D({
             {/* Baranda del balcón */}
             {isBalcony && (
               <mesh
-                ref={(n) => {
-                  if (n) wallRefs.current[wallIndex++] = n;
-                }}
+                ref={registerWall}
                 position={[w / 2, wallHeight / 2, 0]}
                 castShadow
+                material={mat.rail}
               >
                 <boxGeometry args={[WALL_T * 0.6, wallHeight, d]} />
-                <meshStandardMaterial
-                  color="#4f4c37"
-                  roughness={0.45}
-                  metalness={0.25}
-                  transparent
-                  opacity={0.55}
-                />
               </mesh>
             )}
 
             {/* Mobiliario: aparece cuando los muros empiezan a levantarse,
-                para que la planta se lea habitada y no como un esquema
-                vacío. En gama baja se omite. */}
+                para que la planta se lea habitada. */}
             {!lite && morph > 0.3 && (
               <RoomFurniture
                 room={room}
@@ -229,11 +298,8 @@ export function FloorPlate3D({
               />
             )}
 
-            {/* Etiqueta del ambiente.
-                Cada <Html> es un nodo DOM reposicionado por frame vía
-                proyección de matriz, así que en modo lite se muestran sólo
-                los ambientes con render (los accionables) y en desktop se
-                omiten los que no aportan. */}
+            {/* Etiqueta del ambiente. Cada <Html> es un nodo DOM
+                reposicionado por frame vía proyección de matriz. */}
             {showLabel(room.id, hasRender, lite) && morph > 0.25 && (
               <Html
                 position={[0, WALL_H + 0.12, 0]}

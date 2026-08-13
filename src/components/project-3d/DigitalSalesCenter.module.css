@@ -400,17 +400,31 @@
 .stage {
   grid-area: stage;
   position: relative;
-  /* svh, NO vh.
-     En móvil, `vh` cambia cuando el navegador muestra u oculta su barra
-     de direcciones. Eso redimensiona el canvas, cambia el aspect de la
-     cámara y se ve como un zoom automático y errático. `svh` es estable:
-     siempre el viewport chico, así el canvas nunca se redimensiona al
-     scrollear. Ésta era la causa del bug de "se acerca solo" en celular. */
+  /* svh, NO vh: `vh` cambia cuando el navegador móvil muestra u oculta su
+     barra de direcciones, y eso redimensiona el canvas. */
   min-height: min(62svh, 520px);
   background: #f0eee8;
-  /* pan-y deja pasar el scroll vertical de la página: el arrastre
-     horizontal rota la escena, pero el usuario nunca queda atrapado. */
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Escena sin el gesto: el dedo scrollea la página con normalidad */
+.stage[data-engaged="false"] {
   touch-action: pan-y;
+}
+
+/* Escena con el gesto: la maneja useSceneTouch + OrbitControls */
+.stage[data-engaged="true"] {
+  touch-action: none;
+}
+
+@media (pointer: fine) {
+  .stage {
+    touch-action: none;
+  }
 }
 
 @media (pointer: fine) {

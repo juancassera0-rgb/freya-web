@@ -1,12 +1,17 @@
 "use client";
 
+import type { RefObject } from "react";
 import type { PlanRoom, UnitPlan } from "@/data/planGeometry";
 import type { Project3DConfig } from "@/data/project3d";
 import type { QualityTier } from "./AdaptiveQuality";
 import { ArchitecturalMassing } from "./ArchitecturalMassing";
 import { FloorPlate3D } from "./FloorPlate3D";
 import { HotspotMarkers } from "./HotspotMarkers";
-import { SalesCenterScene, type SalesStage } from "./SalesCenterScene";
+import {
+  SalesCenterScene,
+  type SalesStage,
+  type SceneHandle,
+} from "./SalesCenterScene";
 
 type Props = {
   config: Project3DConfig;
@@ -16,6 +21,10 @@ type Props = {
   lite: boolean;
   framing: { distance: number; fov: number; targetY: number };
   active: boolean;
+  /** false en táctil hasta que el usuario toca la escena */
+  interactive: boolean;
+  /** Publica el handle de dolly para el pinch del contenedor */
+  handleRef: RefObject<SceneHandle>;
   onContextLost: () => void;
 
   selectedFloor: number | null;
@@ -36,8 +45,7 @@ type Props = {
  * ÚNICA frontera de carga del subárbol 3D del explorador comercial.
  *
  * Todos los módulos que importan `three` se agrupan acá para que el bundle
- * de la ficha de proyecto no los incluya: se descargan recién cuando la
- * sección se acerca al viewport.
+ * de la ficha de proyecto no los incluya.
  */
 export default function SalesCenterCanvas({
   config,
@@ -47,6 +55,8 @@ export default function SalesCenterCanvas({
   lite,
   framing,
   active,
+  interactive,
+  handleRef,
   onContextLost,
   selectedFloor,
   hoveredFloor,
@@ -68,6 +78,8 @@ export default function SalesCenterCanvas({
       touch={touch}
       framing={framing}
       active={active}
+      interactive={interactive}
+      handleRef={handleRef}
       onContextLost={onContextLost}
     >
       {stage === "unit" && plan ? (
@@ -90,6 +102,9 @@ export default function SalesCenterCanvas({
             onSelectFloor={onSelectFloor}
             dimOthers={selectedFloor != null}
             extract={extractTarget}
+            /* Sin balanceo en táctil: en un teléfono el movimiento
+               autónomo se confunde con inestabilidad. */
+            idleSway={!touch}
           />
           {!lite && stage === "building" && (
             <HotspotMarkers

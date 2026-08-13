@@ -2,28 +2,37 @@
 
 import { useMemo } from "react";
 import * as THREE from "three";
-import { SITE, type SceneMood } from "./sceneTokens";
+import { SITE, SUN, type SceneMood } from "./sceneTokens";
 
 type Props = {
   mood: SceneMood;
   /** Nubes muy tenues; se omiten en gama baja */
   clouds?: boolean;
   radius?: number;
+  /** Baja la teselación del domo en móvil y gama baja */
+  detail?: "low" | "medium" | "high";
 };
 
 /**
  * Cielo procedural: domo invertido con gradiente vertical calculado en el
- * fragment shader. Cero assets — ni HDRI ni texturas, así que no suma un
- * solo KB al bundle.
+ * fragment shader. Cero assets.
  *
- * Los colores salen de sceneTokens, o sea de la paleta de marca: el cielo
- * de día es Off-White con una caída muy leve, y el de atardecer se apoya
- * en Camo. No hay celeste de stock en ninguna parte.
+ * Novedad respecto de la versión anterior: un halo solar. Es un solo
+ * producto punto en el shader —coste despreciable— y es lo que le da
+ * dirección y profundidad al cielo. Sin él, el gradiente plano hacía que
+ * el edificio pareciera flotar en un fondo de estudio; con él hay una
+ * fuente de luz visible que coincide con la dirección de la luz clave de
+ * la escena, y la atmósfera se lee creíble.
  *
- * Las nubes son ruido de valor de dos octavas, apenas perceptible: dan
- * profundidad sin convertir la escena en una postal.
+ * El color del halo sale de la paleta de marca (Off-White entibiado con
+ * Camo), no de un amarillo de stock.
  */
-export function SkyDome({ mood, clouds = true, radius = 60 }: Props) {
+export function SkyDome({
+  mood,
+  clouds = true,
+  radius = 60,
+  detail = "high",
+}: Props) {
   const uniforms = useMemo(
     () => ({
       uTop: {
@@ -38,6 +47,19 @@ export function SkyDome({ mood, clouds = true, radius = 60 }: Props) {
       },
       uClouds: { value: clouds ? 1 : 0 },
       uCloudTint: { value: new THREE.Color(SITE.skyTopDay) },
+      /* Dirección del sol: la MISMA que la directionalLight de la escena,
+         normalizada. Si se mueve la luz, se mueve el halo. */
+      uSunDir: {
+        value: new THREE.Vector3(
+          ...(mood === "dusk" ? SUN.dusk.dir : SUN.day.dir),
+        ).normalize(),
+      },
+      uSunColor: {
+        value: new THREE.Color(mood === "dusk" ? SUN.dusk.halo : SUN.day.halo),
+      },
+      uSunStrength: {
+        value: mood === "dusk" ? SUN.dusk.strength : SUN.day.strength,
+      },
     }),
     [mood, clouds],
   );
@@ -60,10 +82,12 @@ export function SkyDome({ mood, clouds = true, radius = 60 }: Props) {
           uniform vec3 uTop;
           uniform vec3 uHorizon;
           uniform vec3 uCloudTint;
+          uniform vec3 uSunDir;
+          uniform vec3 uSunColor;
+          uniform float uSunStrength;
           uniform float uClouds;
           varying vec3 vWorld;
 
-          // Ruido de valor barato — sin texturas
           float hash(vec2 p) {
             return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
           }
@@ -81,18 +105,25 @@ export function SkyDome({ mood, clouds = true, radius = 60 }: Props) {
           void main() {
             vec3 dir = normalize(vWorld);
 
-            // Gradiente vertical con caída suave hacia el horizonte
             float h = clamp(dir.y * 0.5 + 0.5, 0.0, 1.0);
             float t = pow(smoothstep(0.42, 1.0, h), 0.85);
             vec3 col = mix(uHorizon, uTop, t);
 
-            // Nubes: dos octavas, sólo por encima del horizonte
+            // Halo solar: ancho y suave, sin disco duro. Da dirección
+            // al cielo y calidez alrededor de la fuente de luz.
+            float sun = max(dot(dir, uSunDir), 0.0);
+            float halo = pow(sun, 5.0) * 0.55 + pow(sun, 42.0) * 0.45;
+            col = mix(col, uSunColor, clamp(halo * uSunStrength, 0.0, 0.85));
+
             if (uClouds > 0.5 && dir.y > 0.02) {
               vec2 uv = dir.xz / max(dir.y, 0.12) * 0.55;
               float n = noise(uv * 1.6) * 0.6 + noise(uv * 3.7) * 0.4;
               float band = smoothstep(0.06, 0.5, dir.y) * (1.0 - smoothstep(0.62, 1.0, dir.y));
-              float c = smoothstep(0.52, 0.86, n) * band * 0.22;
-              col = mix(col, uCloudTint, c);
+              float c = smoothstep(0.5, 0.85, n) * band * 0.26;
+              // Las nubes cerca del sol se iluminan: recorta el aspecto
+              // de calcomanía uniforme.
+              vec3 tint = mix(uCloudTint, uSunColor, pow(sun, 3.0) * 0.6);
+              col = mix(col, tint, c);
             }
 
             gl_FragColor = vec4(col, 1.0);
@@ -103,10 +134,13 @@ export function SkyDome({ mood, clouds = true, radius = 60 }: Props) {
     [uniforms],
   );
 
-  const geometry = useMemo(
-    () => new THREE.SphereGeometry(radius, 24, 16),
-    [radius],
-  );
+  /* El domo es un fondo: no necesita silueta fina. En móvil 12×8 ahorra
+     ~700 triángulos y el gradiente se ve idéntico porque el color se
+     calcula por píxel, no por vértice. */
+  const geometry = useMemo(() => {
+    const seg = detail === "high" ? 24 : detail === "medium" ? 16 : 12;
+    return new THREE.SphereGeometry(radius, seg, Math.round(seg * 0.66));
+  }, [radius, detail]);
 
   return (
     <mesh geometry={geometry} material={material} frustumCulled={false} />

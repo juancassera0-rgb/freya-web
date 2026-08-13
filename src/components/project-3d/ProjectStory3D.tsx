@@ -7,6 +7,7 @@ import { useScrollProgress } from "@/components/experience/useScrollProgress";
 import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { usePerfFlags } from "./useClientFlags";
+import { useBlockPageZoom } from "./useBlockPageZoom";
 import { useCanvasActive } from "./useCanvasActive";
 import { FRAMING, useViewportClass } from "./useViewportClass";
 import styles from "./ProjectStory3D.module.css";
@@ -32,11 +33,13 @@ export function ProjectStory3D({ project, config }: Props) {
   const enabled = !reducedMotion;
   const { mounted, active } = useCanvasActive(rootRef, { rootMargin: "0px" });
 
+  /* Dos dedos sobre una sección sticky con canvas dejaban la página
+     zoomeada en iOS, con la escena pinneada y sin salida evidente. */
+  useBlockPageZoom(rootRef, touch);
+
   /**
-   * Antes esto era un listener de scroll sin throttle que llamaba setState
-   * en cada evento — re-renderizaba toda la sección (y el árbol 3D) decenas
-   * de veces por segundo. Ahora el progreso continuo va por ref al canvas y
-   * React sólo re-renderiza al cambiar de capítulo.
+   * El progreso continuo va por ref al canvas y React sólo re-renderiza al
+   * cambiar de capítulo.
    */
   const { progress, rawRef } = useScrollProgress(rootRef, {
     enabled,

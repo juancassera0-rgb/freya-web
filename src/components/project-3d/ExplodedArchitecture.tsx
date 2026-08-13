@@ -7,6 +7,7 @@ import { useScrollProgress } from "@/components/experience/useScrollProgress";
 import type { Project } from "@/data/projects";
 import type { Project3DConfig } from "@/data/project3d";
 import { usePerfFlags } from "./useClientFlags";
+import { useBlockPageZoom } from "./useBlockPageZoom";
 import { useCanvasActive } from "./useCanvasActive";
 import { FRAMING, useViewportClass } from "./useViewportClass";
 import styles from "./ExplodedArchitecture.module.css";
@@ -41,16 +42,16 @@ export function ExplodedArchitecture({ project, config }: Props) {
   const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
   const framing = FRAMING[useViewportClass()];
   const enabled = !reducedMotion && webglOk;
-  /**
-   * La UI sólo necesita saber en qué capítulo estamos (4 estados), así que
-   * cuantizamos a 4 pasos: 4 re-renders por sección en vez de 80.
-   * El 3D lee el progreso continuo desde rawRef.
-   */
   const { progress, rawRef } = useScrollProgress(sectionRef, {
     enabled,
     steps: 4,
   });
   const { mounted, active } = useCanvasActive(sectionRef, { rootMargin: "0px" });
+
+  useBlockPageZoom(sectionRef, touch);
+
+  // Fase activa a partir del progreso
+  const phase = Math.min(3, Math.floor(progress * 4));
 
   const chapters: Chapter[] = [
     {
@@ -75,26 +76,59 @@ export function ExplodedArchitecture({ project, config }: Props) {
     },
   ];
 
-  // Fase activa a partir del progreso
-  const phase = Math.min(3, Math.floor(progress * 4));
-
   /**
-   * Explode derivado del progreso CONTINUO. Se recalcula por frame dentro
-   * del canvas, así la separación de losas es fluida aunque React sólo
-   * re-renderice al cambiar de capítulo.
+   * Explode derivado del progreso continuo.
+   *
+   * El bucle ya no es permanente. Antes corría un `requestAnimationFrame`
+   * encadenado mientras la sección estuviera en viewport, aunque la página
+   * estuviera completamente quieta: un callback por frame en el hilo
+   * principal, el mismo que arma los frames de WebGL, sin nada que
+   * actualizar. Ahora arranca con el scroll y se apaga 240 ms después del
+   * último evento, cuando el valor ya convergió.
+   *
+   * La consecuencia práctica se nota al leer los capítulos sin scrollear:
+   * antes había trabajo constante compitiendo con el render; ahora no.
    */
   const explodeRef = useRef(0);
   useEffect(() => {
+    if (!enabled || !active) return;
+
     let raf = 0;
-    const sync = () => {
+    let stopAt = 0;
+    let running = false;
+
+    const apply = () => {
       explodeRef.current = Math.min(
         1,
         Math.max(0, (rawRef.current - 0.22) / 0.33),
       );
-      raf = requestAnimationFrame(sync);
     };
-    if (enabled && active) raf = requestAnimationFrame(sync);
-    return () => cancelAnimationFrame(raf);
+
+    const tick = () => {
+      apply();
+      if (performance.now() < stopAt) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        running = false;
+      }
+    };
+
+    const onScroll = () => {
+      stopAt = performance.now() + 240;
+      if (!running) {
+        running = true;
+        raf = requestAnimationFrame(tick);
+      }
+    };
+
+    // Primera pasada: deja el valor correcto sin esperar un scroll
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [enabled, active, rawRef]);
 
   // Piso destacado: aparece en la fase 2, se centra en la 3
