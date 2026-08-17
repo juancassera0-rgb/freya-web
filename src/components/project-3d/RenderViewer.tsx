@@ -98,6 +98,7 @@ export function RenderViewer({
               alt={room.renderAlt ?? room.label}
               fill
               priority
+              quality={92}
               sizes="100vw"
               className={styles.img}
             />

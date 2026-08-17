@@ -287,14 +287,18 @@ export function SalesCenterScene({
   return (
     <Canvas
       frameloop={active ? "always" : "never"}
-      dpr={low ? [1, 1.15] : high ? [1, 1.9] : [1, 1.5]}
+      dpr={low ? [1, 1.15] : high ? [1, 2] : [1, 1.5]}
       /* Resize amortiguado y desacoplado del scroll. La altura del
          contenedor además se fija desde useStableStageSize, así que en
          móvil la barra del navegador ya no llega a mover el canvas. */
       resize={{ scroll: false, debounce: { scroll: 0, resize: 180 } }}
       gl={{
         alpha: false,
-        antialias: high,
+        /* "medium" es donde vive la mayoría de los usuarios reales
+           (móvil + notebooks livianas): sin AA ahí, los mullones y
+           barandas del explorador se veían dentados justo en el
+           dispositivo más común. "low" lo sigue evitando. */
+        antialias: tier !== "low",
         powerPreference: low ? "low-power" : "high-performance",
         stencil: false,
         depth: true,
@@ -308,7 +312,10 @@ export function SalesCenterScene({
            z-buffer donde importa. Menos z-fighting en las losas. */
         far: 34,
       }}
-      shadows={low ? false : "soft"}
+      /* "soft" (PCFSoftShadowMap) está deprecado en esta versión de three
+         y se degrada en silencio a sombras duras. "variance" (VSMShadowMap)
+         es el reemplazo vigente. */
+      shadows={low ? false : "variance"}
       onCreated={({ gl }) => {
         gl.toneMapping = ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.12;
@@ -333,9 +340,15 @@ export function SalesCenterScene({
         position={[6, 9, 4]}
         intensity={MOOD.day.keyIntensity}
         color={MOOD.day.key}
-        shadow-mapSize={high ? [1024, 1024] : [512, 512]}
+        /* El explorador congela el shadow map apenas la cámara se
+           asienta (FrozenShadows más abajo), así que el costo de un mapa
+           más grande en "medium" es prácticamente único, no por frame —
+           vale la pena para sombras más nítidas en el dispositivo más
+           común. */
+        shadow-mapSize={high ? [1024, 1024] : [768, 768]}
         shadow-bias={-0.0012}
         shadow-normalBias={0.02}
+        shadow-radius={4}
       >
         <orthographicCamera attach="shadow-camera" args={[-5, 5, 6, -3, 1, 20]} />
       </directionalLight>

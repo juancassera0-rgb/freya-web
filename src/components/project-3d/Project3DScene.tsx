@@ -67,11 +67,16 @@ export function Project3DScene({
     <Canvas
       className={className}
       frameloop={active ? "always" : "never"}
-      dpr={low ? [1, 1.15] : high ? [1, 1.9] : [1, 1.5]}
+      dpr={low ? [1, 1.15] : high ? [1, 2] : [1, 1.5]}
       resize={{ scroll: false, debounce: { scroll: 0, resize: 180 } }}
       gl={{
         alpha: false,
-        antialias: high,
+        /* AA sólo se apagaba fuera de "high", pero "medium" cubre a la
+           mayoría de los dispositivos reales (todo el móvil y notebooks de
+           menos de 8 núcleos): eran justo los que más se beneficiaban, y
+           los que más aliasing mostraban en mullones y barandas finas.
+           "low" lo sigue evitando — ahí el costo no se justifica. */
+        antialias: tier !== "low",
         powerPreference: low ? "low-power" : "high-performance",
         stencil: false,
       }}
@@ -89,7 +94,11 @@ export function Project3DScene({
         near: 0.35,
         far: 34,
       }}
-      shadows={low ? false : "soft"}
+      /* "soft" (PCFSoftShadowMap) está deprecado en esta versión de three —
+         el renderer lo degrada en silencio a sombras duras (PCF) sin avisar
+         más que por consola. "variance" (VSMShadowMap) es el reemplazo
+         vigente: sombra realmente suave, sin el aviso de deprecación. */
+      shadows={low ? false : "variance"}
       onCreated={({ gl }) => {
         gl.toneMapping = ACESFilmicToneMapping;
         gl.toneMappingExposure = isHero ? 1.08 : 1.15;
@@ -115,6 +124,9 @@ export function Project3DScene({
         shadow-mapSize={high ? [1024, 1024] : [512, 512]}
         shadow-bias={-0.0012}
         shadow-normalBias={0.02}
+        /* Radio del blur de VSM — perfil suave sin lavar el contacto
+           losa/vidrio, que es donde la sombra tiene que leer volumen. */
+        shadow-radius={4}
       >
         {/* Cámara de sombra ajustada al volumen (torre de ~4.2 sobre una
             vereda de 3). Antes cubría ±8 unidades para un objeto de 4:
@@ -158,7 +170,7 @@ export function Project3DScene({
           scale={14}
           blur={2.4}
           far={4.5}
-          resolution={256}
+          resolution={high ? 512 : 256}
           frames={60}
           color={BRAND.offBlack}
         />
