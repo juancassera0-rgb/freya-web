@@ -11,9 +11,6 @@ import styles from "./Header.module.css";
 const links = [
   { href: "/desarrollos", label: "Desarrollos" },
   { href: "/nosotros", label: "Nosotros" },
-  { href: "/como-trabajamos", label: "Cómo trabajamos" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/contacto", label: "Contacto" },
 ];
 
 const featured = getActiveProjects();
@@ -72,7 +69,7 @@ export function Header() {
             className={styles.brand}
             data-hidden={transparent ? "true" : "false"}
             onClick={() => setOpen(false)}
-            aria-label="Freya Desarrollos — Inicio"
+            aria-label="Freya — Inicio"
           >
             <FreyaLogo variant="header" priority={!isHome} />
           </Link>
@@ -93,14 +90,6 @@ export function Header() {
                 </Link>
               );
             })}
-            <Link
-              href="/asesor"
-              className={styles.cta}
-              data-active={pathname.startsWith("/asesor")}
-            >
-              <span className={styles.ctaSq} aria-hidden />
-              Hablar con un asesor
-            </Link>
           </nav>
 
           <button
@@ -133,7 +122,7 @@ export function Header() {
             <FreyaLogo variant="header-light" />
           </div>
           <nav className={styles.overlayNav} aria-label="Menú">
-            {[...links, { href: "/asesor", label: "Hablar con un asesor" }].map(
+            {links.map(
               (link, i) => {
                 const active =
                   pathname === link.href ||
@@ -173,7 +162,7 @@ export function Header() {
                     >
                       <span className={styles.overlayProjectName}>{p.name}</span>
                       <span className={styles.overlayProjectMeta}>
-                        {p.neighborhood} · {p.typologies}
+                        {p.neighborhood}
                       </span>
                     </Link>
                   </li>

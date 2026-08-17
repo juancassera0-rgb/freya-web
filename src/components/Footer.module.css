@@ -1,6 +1,6 @@
 .footer {
-  background: #1d1d1d;
-  color: #e8e4dc;
+  background: var(--dark);
+  color: var(--off-white);
   padding-top: var(--space-8);
   margin-top: auto;
 }
@@ -17,39 +17,8 @@
   margin-bottom: 1.1rem;
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem 1.5rem;
-  margin-top: 1rem;
-}
-
-.footerPrimary {
-  display: inline-flex;
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #c4b79a;
-  border-bottom: 1px solid #c4b79a;
-  padding-bottom: 0.2rem;
-}
-
-.footerText {
-  font-size: 0.74rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #b9b3a8;
-}
-
-.footerText:hover {
-  color: #fff;
-}
-
 .tag {
-  color: #b9b3a8;
+  color: var(--on-dark-muted);
   max-width: 18rem;
   margin-bottom: 1rem;
   line-height: 1.5;
@@ -57,20 +26,13 @@
 }
 
 .meta {
-  color: #cfc9be;
-  font-size: 0.92rem;
-  margin-bottom: 0.35rem;
+  color: var(--on-dark-muted);
+  font-size: 0.82rem;
+  margin-top: 1.25rem;
 }
 
 .meta a:hover {
-  color: #fff;
-}
-
-.demo {
-  margin-top: 0.85rem;
-  font-size: 0.75rem;
-  color: #8f887c;
-  max-width: 18rem;
+  color: var(--off-white);
 }
 
 .heading {
@@ -78,7 +40,7 @@
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #c4b79a;
+  color: var(--camo-tint);
   margin-bottom: 0.85rem;
 }
 
@@ -93,14 +55,13 @@
 }
 
 .list a {
-  color: #ddd7cd;
+  color: color-mix(in srgb, var(--off-white) 82%, transparent);
   font-size: 0.92rem;
 }
 
 .list a:hover {
-  color: #fff;
+  color: var(--off-white);
 }
-
 
 .bottom {
   display: flex;
@@ -108,13 +69,13 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding-block: 1.25rem;
-  border-top: 1px solid #2c2a27;
-  color: #8f887c;
+  border-top: 1px solid var(--on-dark-line);
+  color: var(--on-dark-muted);
   font-size: 0.82rem;
 }
 
 @media (min-width: 860px) {
   .grid {
-    grid-template-columns: 1.4fr 1fr 1.2fr 1fr;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
   }
 }

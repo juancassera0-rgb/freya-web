@@ -1,27 +1,3 @@
-@font-face {
-  font-family: "Neue Regrade";
-  src: url("/fonts/Neue-Regrade-Light.ttf") format("truetype");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Neue Regrade";
-  src: url("/fonts/Neue-Regrade-Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Neue Regrade";
-  src: url("/fonts/Neue-Regrade-Semibold.ttf") format("truetype");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   /* Brand Guideline Freya 2025 — paleta oficial */
   --bg: #f6f6f6; /* Off-White */
@@ -36,14 +12,21 @@
   --accent-hover: #3a3828;
   --accent-soft: #e6e3d8;
   --copper: #4f4c37;
-  --whatsapp: #1f6b45;
   --dark: #1d1c1b;
   --off-white: #f6f6f6;
   --camo: #4f4c37;
+  /* Tinte de camo aclarado — único acento permitido sobre fondos oscuros,
+     derivado de los 3 colores de marca (nunca un cuarto color suelto). */
+  --camo-tint: color-mix(in srgb, var(--camo) 45%, var(--off-white));
+  --on-dark-muted: color-mix(in srgb, var(--off-white) 60%, transparent);
+  --on-dark-line: color-mix(in srgb, var(--off-white) 16%, transparent);
   --radius: 0;
   --radius-lg: 0;
-  --font-display: "Neue Regrade", "Segoe UI", sans-serif;
-  --font-body: "Neue Regrade", "Segoe UI", sans-serif;
+  /* Provisorio: la tipografía de marca es "Neue Regarde", todavía no
+     entregada en formato web por el estudio de marca. Hasta que llegue,
+     grotesca de sistema — no dar esta tipografía por cerrada. */
+  --font-display: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-body: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -297,15 +280,6 @@ h3 {
 
 .btn-ghost:hover {
   color: var(--accent);
-}
-
-.btn-whatsapp {
-  background: var(--whatsapp);
-  color: #fff;
-}
-
-.btn-whatsapp:hover {
-  filter: brightness(1.05);
 }
 
 .btn-group {

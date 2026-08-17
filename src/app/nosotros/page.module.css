@@ -77,19 +77,6 @@
   gap: 0.8rem;
 }
 
-.ctaText {
-  font-size: 0.78rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  transition: color 0.25s ease;
-}
-
-.ctaText:hover {
-  color: var(--accent);
-}
-
 @media (min-width: 800px) {
   .statsGrid {
     grid-template-columns: repeat(4, 1fr);

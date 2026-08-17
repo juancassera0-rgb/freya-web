@@ -89,7 +89,7 @@ function demoUnitsForFloors(floors: number): {
       id: `demo-${level}a`,
       code: `${level}01`,
       floor: level,
-      typology: "4 ambientes",
+      typology: "Cuadrado",
       surfaceM2: 178,
       status: "disponible",
       orientation: "Frente",
@@ -99,7 +99,7 @@ function demoUnitsForFloors(floors: number): {
       id: `demo-${level}b`,
       code: `${level}02`,
       floor: level,
-      typology: "4 ambientes",
+      typology: "Cuadrado",
       surfaceM2: 185,
       status: level % 4 === 0 ? "reservado" : "disponible",
       orientation: "Contrafrente",
@@ -118,42 +118,42 @@ function demoUnitsForFloors(floors: number): {
 
 const demoInventory = demoUnitsForFloors(9);
 
-export const beauchef3d: Project3DConfig = {
-  projectSlug: "beauchef-620",
+export const sow3d: Project3DConfig = {
+  projectSlug: "sow",
   status: "placeholder",
   schematicFloors: 9,
   placeholderNote:
-    "Modelo 3D provisional. Masa esquemática — pendiente GLB oficial de Beauchef 620.",
+    "Modelo 3D provisional. Masa esquemática — pendiente GLB oficial de Sow.",
   inventoryNote:
     "Inventario de demostración para la interfaz. Reemplazar con tipologías y disponibilidad oficiales.",
   floors: demoInventory.floors,
   units: demoInventory.units,
   /**
-   * Renders reales existentes en /public/images/projects para Beauchef.
+   * Renders reales existentes en /public/images/projects para Sow.
    * El living es el único interior disponible hoy; cuando lleguen más
    * renders por ambiente se agregan acá y el explorador los toma solo.
    */
   roomRenders: {
     living: {
       src: "/images/projects/beauchef-living.jpg",
-      alt: "Living comedor de Beauchef 620",
+      alt: "Living comedor de Sow",
     },
   },
   commonRenders: [
     {
       id: "lobby",
       src: "/images/projects/beauchef-acceso.jpg",
-      alt: "Acceso y lobby de Beauchef 620",
+      alt: "Acceso y lobby de Sow",
     },
     {
       id: "fachada",
       src: "/images/projects/beauchef-cover.jpg",
-      alt: "Fachada de Beauchef 620",
+      alt: "Fachada de Sow",
     },
     {
       id: "fachada-atardecer",
       src: "/images/projects/beauchef-dusk.jpg",
-      alt: "Beauchef 620 al atardecer",
+      alt: "Sow al atardecer",
     },
   ],
   hotspots: [
@@ -230,7 +230,7 @@ export const beauchef3d: Project3DConfig = {
       id: "living",
       index: "03",
       title: "Habitar",
-      body: "Unidades amplias de cuatro ambientes, balcones con parrilla y luz natural como eje del proyecto.",
+      body: "Cuadrados amplios, balcones con parrilla y luz natural como eje del proyecto.",
       cameraAt: 0.65,
       highlightFloor: 5,
     },
@@ -246,7 +246,7 @@ export const beauchef3d: Project3DConfig = {
 };
 
 const configs: Record<string, Project3DConfig> = {
-  "beauchef-620": beauchef3d,
+  "sow": sow3d,
 };
 
 export function getProject3D(slug: string): Project3DConfig | undefined {
@@ -271,4 +271,4 @@ export function getUnitsForFloor(
   return config.units.filter((u) => u.floor === floor);
 }
 
-export const HERO_PROJECT_SLUG = "beauchef-620";
+export const HERO_PROJECT_SLUG = "sow";

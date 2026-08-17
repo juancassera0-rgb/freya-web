@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { BrandLoader } from "@/components/BrandLoader";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { SiteAtmosphere } from "@/components/SiteAtmosphere";
@@ -32,7 +31,7 @@ export const metadata: Metadata = {
  * VIEWPORT — declarado explícitamente.
  *
  * `interactiveWidget: "resizes-content"` evita que el teclado virtual
- * (formulario del asesor) desplace el layout por encima del viewport.
+ * (inputs de formularios) desplace el layout por encima del viewport.
  *
  * NOTA — `maximumScale: 1` se omitió a propósito.
  *
@@ -76,7 +75,6 @@ export default function RootLayout({
           <main id="contenido">{children}</main>
           <Footer />
         </div>
-        <WhatsAppButton />
         <CursorContext />
       </body>
     </html>

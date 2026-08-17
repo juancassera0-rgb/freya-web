@@ -1,7 +1,6 @@
 "use client";
 
 import type { Project } from "@/data/projects";
-import { CountedText } from "@/components/AnimatedCounter";
 import styles from "./ProjectFacts.module.css";
 import type { ReactNode } from "react";
 
@@ -12,7 +11,6 @@ type FactItem = {
   action?: string;
   accent?: boolean;
   badge?: boolean;
-  countText?: string;
 };
 
 type Props = {
@@ -20,6 +18,10 @@ type Props = {
   statusLabel: string;
 };
 
+/**
+ * Ficha sin datos "tipo inmobiliaria" (metros, ambientes, pisos) — solo lo
+ * que pide la marca: barrio, estado de obra y cuadrados disponibles.
+ */
 export function ProjectFacts({ project, statusLabel }: Props) {
   const mapQuery = encodeURIComponent(
     `${project.location}, ${project.neighborhood}, ${project.city}`,
@@ -28,50 +30,27 @@ export function ProjectFacts({ project, statusLabel }: Props) {
 
   const items: FactItem[] = [
     {
-      label: "Ubicación",
+      label: "Barrio",
       value: (
         <>
-          {project.location}
+          {project.neighborhood}
           <br />
-          {project.neighborhood}, {project.city}
+          {project.city}
         </>
       ),
       href: mapUrl,
       action: "Ver en mapa",
       accent: true,
     },
-    { label: "Tipo", value: project.type },
-    {
-      label: "Tipologías",
-      value: <CountedText text={project.typologies} />,
-      countText: project.typologies,
-    },
-    {
-      label: "Superficies",
-      value: <CountedText text={project.surfaces} />,
-      countText: project.surfaces,
-    },
+    { label: "Estado", value: statusLabel, badge: true },
   ];
 
-  if (project.floors) {
-    items.push({
-      label: "Pisos",
-      value: <CountedText text={project.floors} />,
-      countText: project.floors,
-    });
+  if (project.stage) {
+    items.push({ label: "Obra", value: project.stage });
   }
-  if (project.units) {
-    items.push({
-      label: "Unidades",
-      value: <CountedText text={project.units} />,
-      countText: project.units,
-    });
+  if (project.squaresAvailable) {
+    items.push({ label: "Cuadrados", value: project.squaresAvailable });
   }
-
-  items.push(
-    { label: "Estado", value: statusLabel, badge: true },
-    { label: "Perfil", value: project.buyerProfile },
-  );
 
   return (
     <div className={styles.wrap}>

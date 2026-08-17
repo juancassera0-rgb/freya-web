@@ -21,9 +21,8 @@ type Props = {
 };
 
 /**
- * Wordmark + cuadrado variable (m²).
- * El Brand Guideline pide que el cuadrado cambie sutilmente
- * según el soporte, sin alterar tipografía ni colores del logo.
+ * Wordmark "FREYA" limpio — sin la línea "Desarrollos" y sin el cuadrado
+ * decorativo (pedido de marca: versión más silenciosa del logo).
  */
 export function FreyaLogo({
   variant = "header",
@@ -52,7 +51,6 @@ export function FreyaLogo({
           className={styles.iso}
           priority={priority}
         />
-        <span className={styles.sq} aria-hidden />
       </span>
     );
   }
@@ -66,14 +64,17 @@ export function FreyaLogo({
       data-light={light ? "true" : "false"}
     >
       <Image
-        src={light ? "/images/brand/logo-white.png" : "/images/brand/logo-black.png"}
-        alt="Freya Desarrollos"
+        src={
+          light
+            ? "/images/brand/logo-white-wordmark.png"
+            : "/images/brand/logo-black-wordmark.png"
+        }
+        alt="Freya"
         width={variant === "hero" ? 480 : 160}
-        height={variant === "hero" ? 158 : 52}
+        height={variant === "hero" ? 115 : 38}
         className={styles.logo}
         priority={priority}
       />
-      <span className={styles.sq} aria-hidden />
     </span>
   );
 }
@@ -87,7 +88,7 @@ type BrandLinkProps = Props & {
 export function FreyaBrandLink({
   href = "/",
   onClick,
-  "aria-label": ariaLabel = "Freya Desarrollos — Inicio",
+  "aria-label": ariaLabel = "Freya — Inicio",
   ...logoProps
 }: BrandLinkProps) {
   return (

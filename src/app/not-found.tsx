@@ -22,9 +22,6 @@ export default function NotFound() {
           <Link className="btn btn-secondary" href="/desarrollos">
             Desarrollos
           </Link>
-          <Link className="btn btn-secondary" href="/contacto">
-            Contacto
-          </Link>
         </div>
       </div>
     </div>

@@ -38,15 +38,9 @@ export default function ComoTrabajamosPage() {
                 Personalizá materiales y terminaciones con acompañamiento dedicado.
               </p>
               <div className={styles.bannerLinks}>
-                <Link
-                  className={styles.bannerPrimary}
-                  href="/asesor?proyecto=beauchef-620"
-                >
-                  Quiero personalizar mi unidad
-                  <span aria-hidden>→</span>
-                </Link>
-                <Link className={styles.bannerText} href="/desarrollos">
+                <Link className={styles.bannerPrimary} href="/desarrollos">
                   Ver proyectos
+                  <span aria-hidden>→</span>
                 </Link>
               </div>
             </section>

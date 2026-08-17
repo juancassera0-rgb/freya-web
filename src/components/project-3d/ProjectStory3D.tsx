@@ -104,11 +104,8 @@ export function ProjectStory3D({ project, config }: Props) {
               </li>
             ))}
           </ol>
-          <Link
-            className={styles.cta}
-            href={`/asesor?proyecto=${project.slug}`}
-          >
-            Consultar por {project.shortName}
+          <Link className={styles.cta} href="/#contacto">
+            Se entra por lista
             <span aria-hidden>→</span>
           </Link>
           {config.status === "placeholder" && (

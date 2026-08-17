@@ -123,7 +123,7 @@
 }
 
 .philosophy :global(.meta-index) {
-  color: #c4b79a;
+  color: var(--camo-tint);
 }
 
 .principles {
@@ -150,7 +150,7 @@
   font-size: var(--fs-meta);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.16em;
-  color: #c4b79a;
+  color: var(--camo-tint);
   font-weight: 600;
 }
 
@@ -270,23 +270,6 @@
   align-items: center;
   gap: 0.85rem 1.75rem;
   margin-top: 2rem;
-}
-
-.ctaMeta {
-  display: grid;
-  gap: 0.4rem;
-  list-style: none;
-  margin: 2.5rem 0 0;
-  padding: 1.25rem 0 0;
-  border-top: 1px solid var(--line);
-  font-size: var(--fs-meta);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.ctaForm {
-  padding-top: 0.5rem;
 }
 
 /* --- 09 FAQ --- */

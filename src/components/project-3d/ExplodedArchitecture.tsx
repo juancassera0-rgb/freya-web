@@ -72,7 +72,7 @@ export function ExplodedArchitecture({ project, config }: Props) {
     {
       index: "04",
       title: "La unidad",
-      body: `${project.typologies} · ${project.surfaces}. Del volumen general al espacio concreto donde se vive.`,
+      body: "Del volumen general al espacio concreto donde se vive.",
     },
   ];
 

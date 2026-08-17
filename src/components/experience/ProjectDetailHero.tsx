@@ -11,19 +11,13 @@ type Props = {
   project: Project;
   statusLabel: string;
   isActive: boolean;
-  whatsappHref: string;
 };
 
 /**
  * Hero de ficha: la portada entra por máscara y escala hacia atrás mientras
  * el título asciende — continuidad visual con la tarjeta del listado.
  */
-export function ProjectDetailHero({
-  project,
-  statusLabel,
-  isActive,
-  whatsappHref,
-}: Props) {
+export function ProjectDetailHero({ project, statusLabel, isActive }: Props) {
   const rootRef = useRef<HTMLElement>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
   const [entered, setEntered] = useState(false);
@@ -112,57 +106,31 @@ export function ProjectDetailHero({
           <p className={styles.headline}>{project.headline}</p>
         </MaskReveal>
 
-        <MaskReveal immediate delay={620}>
-          <dl className={styles.specs}>
-            <div>
-              <dt>Tipo</dt>
-              <dd>{project.type}</dd>
-            </div>
-            <div>
-              <dt>Tipologías</dt>
-              <dd>{project.typologies}</dd>
-            </div>
-            <div>
-              <dt>Superficies</dt>
-              <dd>{project.surfaces}</dd>
-            </div>
-            {project.floors || project.units ? (
+        {project.stage ? (
+          <MaskReveal immediate delay={620}>
+            <dl className={styles.specs}>
               <div>
-                <dt>Escala</dt>
-                <dd>{project.floors ?? project.units}</dd>
+                <dt>Ubicación</dt>
+                <dd>{project.location}</dd>
               </div>
-            ) : null}
-            <div>
-              <dt>Ubicación</dt>
-              <dd>{project.location}</dd>
-            </div>
-          </dl>
-        </MaskReveal>
+              <div>
+                <dt>Estado</dt>
+                <dd>{project.stage}</dd>
+              </div>
+            </dl>
+          </MaskReveal>
+        ) : null}
 
         <MaskReveal immediate delay={720}>
           <div className={styles.actions}>
             {isActive ? (
-              <>
-                <a className={styles.waCta} href={whatsappHref} target="_blank" rel="noopener noreferrer">
-                  Consultar unidades
-                  <span aria-hidden>→</span>
-                </a>
-                <MagneticCTA
-                  href={`/asesor?proyecto=${project.slug}`}
-                  variant="ghost"
-                >
-                  Pedir brochure
-                </MagneticCTA>
-              </>
+              <MagneticCTA href="/#contacto" variant="dark">
+                Se entra por lista
+              </MagneticCTA>
             ) : (
-              <>
-                <MagneticCTA href="/desarrollos" variant="dark">
-                  Ver desarrollos activos
-                </MagneticCTA>
-                <MagneticCTA href="/asesor" variant="ghost">
-                  Hablar con un asesor
-                </MagneticCTA>
-              </>
+              <MagneticCTA href="/desarrollos" variant="dark">
+                Ver desarrollos activos
+              </MagneticCTA>
             )}
           </div>
         </MaskReveal>

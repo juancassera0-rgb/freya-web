@@ -1,320 +1,74 @@
 .root {
   position: relative;
-  height: 260vh;
-  background: var(--dark);
-}
-
-.sticky {
-  position: sticky;
-  top: 0;
   height: 100vh;
   height: 100svh;
   overflow: hidden;
   background: var(--dark);
 }
 
-.stage,
-.canvasFallback {
+/* Imagen calma — stand-in hasta fotografía real de arquitectura.
+   Se pasa a escala de grises y se tiñe con el verde de marca por blend,
+   en vez de mostrar color natural: mismo espíritu que el tratamiento ya
+   usado en el listado de proyectos, pero llevado a duotono completo. */
+.image {
   position: absolute;
   inset: 0;
+  background: url("/images/services/espacios.jpg") center / cover no-repeat;
+  filter: grayscale(1) brightness(0.78) contrast(1.05);
 }
 
-.canvasFallback {
-  background: var(--dark);
-}
-
-.poster {
+.wash {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
-  filter: grayscale(0.3) brightness(0.55);
-}
-
-/* Scrim de legibilidad. Se aligeró arriba para dejar ver el cielo del
-   atardecer; abajo se mantiene fuerte porque ahí está el resplandor del
-   horizonte y el texto es claro. */
-.vignette {
-  position: absolute;
-  inset: 0;
+  background: var(--camo);
+  mix-blend-mode: color;
   pointer-events: none;
-  background:
-    linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--dark) 46%, transparent) 0%,
-      transparent 26%,
-      transparent 52%,
-      color-mix(in srgb, var(--dark) 82%, transparent) 100%
-    );
 }
 
-/* Retícula estructural — dibujo técnico de fondo */
-.gridLines {
+.wash::after {
+  content: "";
   position: absolute;
   inset: 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  pointer-events: none;
-  padding-inline: var(--gutter);
-  opacity: 0.14;
-}
-
-.gridLines span {
-  border-left: 1px solid var(--off-white);
-}
-
-.gridLines span:last-child {
-  border-right: 1px solid var(--off-white);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--dark) 35%, transparent) 0%,
+    transparent 40%,
+    color-mix(in srgb, var(--dark) 55%, transparent) 100%
+  );
 }
 
 .ui {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  padding: calc(var(--header-h) + 1.75rem) var(--gutter) 2rem;
-  color: var(--off-white);
-  pointer-events: none;
-}
-
-.ui a,
-.ui button {
-  pointer-events: auto;
-}
-
-/* --- Meta superior --- */
-.topMeta {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.wordmark {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.42em;
-  text-transform: uppercase;
-}
-
-.metaLine {
-  display: block;
-  font-size: var(--fs-meta);
-  letter-spacing: var(--tracking-meta);
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--off-white) 62%, transparent);
-}
-
-/* --- Headline --- */
-.headlineBlock {
-  display: flex;
-  align-items: center;
-}
-
-/* Titular del hero.
-   Deliberadamente MÁS CHICO que el resto de los titulares del sitio: acá
-   la arquitectura es el sujeto y la tipografía la enmarca. Antes ocupaba
-   casi todo el viewport y competía con el edificio.
-   Se acota también por altura (vh) para que en notebooks —viewport ancho
-   pero bajo— no empuje el resto de la composición fuera de pantalla. */
-.headline {
-  font-family: var(--font-display);
-  font-size: clamp(1.9rem, min(5vw, 7.4vh), 4rem);
-  font-weight: 500; /* Medium — manual de marca para titulares */
-  line-height: 1.02;
-  letter-spacing: -0.015em;
-  text-transform: uppercase;
-  margin: 0;
-  max-width: 16ch;
-  text-wrap: balance;
-}
-
-/* --- Meta inferior --- */
-.bottomMeta {
-  display: grid;
-  gap: 1.75rem;
-  align-items: end;
-}
-
-.focusCard {
-  display: grid;
-  gap: 0.35rem;
-  padding-left: 1rem;
-  border-left: 1px solid color-mix(in srgb, var(--off-white) 32%, transparent);
-}
-
-.focusLabel {
-  font-size: var(--fs-meta);
-  letter-spacing: var(--tracking-meta);
-  text-transform: uppercase;
-  color: var(--copper);
-  filter: brightness(2.1);
-}
-
-.focusName {
-  font-family: var(--font-display);
-  font-size: clamp(1.15rem, 2vw, 1.5rem);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: -0.01em;
-  transition: opacity var(--dur-fast) var(--ease-arch);
-}
-
-.focusName:hover {
-  opacity: 0.62;
-}
-
-.focusPlace {
-  font-size: var(--fs-meta);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--off-white) 58%, transparent);
-}
-
-.specs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2.25rem;
-  margin: 0;
-}
-
-.specs div {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.specs dt {
-  font-size: var(--fs-meta);
-  letter-spacing: var(--tracking-meta);
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--off-white) 52%, transparent);
-}
-
-.specs dd {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
-  align-items: center;
-}
-
-.actions :global(a[data-variant="ghost"]) {
-  color: var(--off-white);
-}
-
-/* --- Scroll hint --- */
-.scrollHint {
-  position: absolute;
-  right: var(--gutter);
-  bottom: 2rem;
-  display: grid;
   justify-items: center;
-  gap: 0.6rem;
+  align-content: center;
+  gap: 1.5rem;
+  padding: calc(var(--header-h) + 1.75rem) var(--gutter) 3rem;
+  text-align: center;
 }
 
-.scrollLabel {
-  font-size: 0.55rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--off-white) 55%, transparent);
-  writing-mode: vertical-rl;
+.ui :global(.v-hero) {
+  width: min(360px, 70vw);
 }
 
-.scrollBar {
-  width: 1px;
-  height: 3.5rem;
-  background: color-mix(in srgb, var(--off-white) 28%, transparent);
-  position: relative;
-  overflow: hidden;
-}
-
-.scrollBar::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  height: 45%;
-  background: var(--off-white);
-  animation: scrollPulse 2.4s var(--ease-in-out) infinite;
-}
-
-@keyframes scrollPulse {
-  0% { transform: translateY(-100%); }
-  60%, 100% { transform: translateY(240%); }
-}
-
-.badge {
-  position: absolute;
-  left: var(--gutter);
-  bottom: 2rem;
-  z-index: 3;
-  max-width: 22rem;
-  font-size: 0.58rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  line-height: 1.5;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--off-white) 45%, transparent);
+.tagline {
   margin: 0;
+  font-size: var(--fs-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--off-white) 78%, transparent);
 }
 
-@media (min-width: 900px) {
-  .bottomMeta {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "focus specs"
-      "actions actions";
-    gap: 2.5rem 3rem;
-  }
-
-  .focusCard { grid-area: focus; }
-  .specs { grid-area: specs; justify-content: end; }
-  .actions { grid-area: actions; }
-}
-
-@media (max-width: 899px) {
-  .root {
-    height: 200vh;
-  }
-
-  .gridLines {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .badge {
-    position: static;
-    margin-top: 1.25rem;
-    max-width: none;
-  }
-
-  .scrollHint {
-    display: none;
-  }
+.cta {
+  color: var(--off-white);
+  margin-top: 0.5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .root {
     height: auto;
-  }
-
-  .sticky {
-    position: relative;
-    height: auto;
     min-height: 100svh;
-  }
-
-  .scrollBar::after {
-    animation: none;
   }
 }

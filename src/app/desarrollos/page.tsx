@@ -7,8 +7,7 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Desarrollos",
-  description:
-    "Proyectos en comercialización y finalizados de Freya en Caballito, Saavedra, Villa Devoto y Pinamar.",
+  description: "Proyectos de Freya en comercialización y cerrados.",
 };
 
 export default function DesarrollosPage() {
@@ -29,8 +28,7 @@ export default function DesarrollosPage() {
           />
           <MaskReveal immediate delay={280}>
             <p className={styles.mastheadLead}>
-              Lo que está en venta hoy, y lo ya entregado como respaldo de
-              ejecución.
+              Lo que está en comercialización hoy, y lo cerrado como registro.
             </p>
           </MaskReveal>
 
@@ -40,7 +38,7 @@ export default function DesarrollosPage() {
               <dd>{String(active.length).padStart(2, "0")}</dd>
             </div>
             <div>
-              <dt>Entregados</dt>
+              <dt>Cerrados</dt>
               <dd>{String(finished.length).padStart(2, "0")}</dd>
             </div>
             <div>
@@ -58,8 +56,7 @@ export default function DesarrollosPage() {
             En comercialización
           </h2>
           <p className={styles.blockLead}>
-            Unidades disponibles para vivir o invertir, con asesoramiento
-            comercial.
+            Cuadrados disponibles para vivir o invertir.
           </p>
         </div>
         <ProjectShowcase projects={active} />
@@ -69,11 +66,10 @@ export default function DesarrollosPage() {
         <div className={`container-wide ${styles.blockHead}`}>
           <span className="meta-index">02</span>
           <h2 id="finalizados" className={styles.blockTitle}>
-            Obra entregada
+            Cerrados
           </h2>
           <p className={styles.blockLead}>
-            Obras finalizadas que muestran la trayectoria y calidad constructiva
-            de Freya.
+            Proyectos que ya no están en comercialización.
           </p>
         </div>
         <ProjectShowcase projects={finished} startIndex={active.length} />

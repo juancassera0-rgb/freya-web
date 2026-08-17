@@ -119,7 +119,7 @@ function ProjectRow({ project, index, flip, focused, onFocus }: RowProps) {
   }, []);
 
   const statusLabel =
-    project.status === "en-comercializacion" ? "En comercialización" : "Finalizado";
+    project.status === "en-comercializacion" ? "En comercialización" : "Cerrado";
 
   return (
     <article
@@ -164,22 +164,13 @@ function ProjectRow({ project, index, flip, focused, onFocus }: RowProps) {
 
           <dl className={styles.specs}>
             <div>
-              <dt>Tipologías</dt>
-              <dd>{project.typologies}</dd>
+              <dt>Estado</dt>
+              <dd>{project.stage ?? statusLabel}</dd>
             </div>
-            <div>
-              <dt>Superficies</dt>
-              <dd>{project.surfaces}</dd>
-            </div>
-            {project.floors ? (
+            {project.squaresAvailable ? (
               <div>
-                <dt>Escala</dt>
-                <dd>{project.floors}</dd>
-              </div>
-            ) : project.units ? (
-              <div>
-                <dt>Escala</dt>
-                <dd>{project.units}</dd>
+                <dt>Cuadrados</dt>
+                <dd>{project.squaresAvailable}</dd>
               </div>
             ) : null}
           </dl>

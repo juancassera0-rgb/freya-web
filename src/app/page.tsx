@@ -1,5 +1,3 @@
-import { Suspense } from "react";
-import { ContactForm } from "@/components/ContactForm";
 import { FaqList } from "@/components/FaqList";
 import { MaskReveal } from "@/components/experience/MaskReveal";
 import { MagneticCTA } from "@/components/experience/MagneticCTA";
@@ -25,14 +23,8 @@ export default function HomePage() {
 
   return (
     <>
-      {/* 01 — HERO 3D */}
-      {heroProject && hero3d ? (
-        <ArchitecturalHero
-          project={heroProject}
-          config={hero3d}
-          zones={site.zones}
-        />
-      ) : null}
+      {/* 01 — HERO */}
+      <ArchitecturalHero />
 
       {/* 02 — IDENTIDAD */}
       <section className={styles.identity} aria-labelledby="identidad">
@@ -141,13 +133,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 07 — OBRA ENTREGADA */}
+      {/* 07 — CERRADOS */}
       <section className={styles.showcase} aria-labelledby="finalizados">
         <div className={`container-wide ${styles.sectionHead}`}>
           <div className={styles.sectionHeadMain}>
             <span className="meta-index">04</span>
             <MaskReveal as="h2" className={styles.sectionTitle}>
-              Obra entregada
+              Cerrados
             </MaskReveal>
           </div>
         </div>
@@ -155,7 +147,7 @@ export default function HomePage() {
         <ProjectShowcase projects={finished} startIndex={active.length} />
       </section>
 
-      {/* 08 — CTA COMERCIAL */}
+      {/* 08 — CIERRE */}
       <section className={styles.cta} aria-labelledby="contacto-cta">
         <div className="container-wide">
           <div className={styles.ctaGrid}>
@@ -168,39 +160,15 @@ export default function HomePage() {
               />
               <MaskReveal delay={260}>
                 <p className={styles.ctaLead}>
-                  Un asesor te acompaña desde la primera consulta hasta la
-                  escritura, con información de avance de obra y opciones de
-                  personalización.
+                  Se entra por lista, al pie del sitio.
                 </p>
               </MaskReveal>
 
               <div className={styles.ctaActions}>
-                <MagneticCTA href="/asesor" variant="dark">
-                  Hablar con un asesor
-                </MagneticCTA>
-                <MagneticCTA href="/contacto" variant="ghost">
-                  Contacto institucional
+                <MagneticCTA href="/desarrollos" variant="ghost">
+                  Ver desarrollos
                 </MagneticCTA>
               </div>
-
-              <ul className={styles.ctaMeta}>
-                <li>
-                  <a
-                    className="link-underline"
-                    href={`mailto:${site.contact.email}`}
-                  >
-                    {site.contact.email}
-                  </a>
-                </li>
-                <li>{site.contact.address}</li>
-                <li>{site.contact.hours}</li>
-              </ul>
-            </div>
-
-            <div className={styles.ctaForm}>
-              <Suspense fallback={<p className="meta">Cargando formulario…</p>}>
-                <ContactForm compact />
-              </Suspense>
             </div>
           </div>
         </div>

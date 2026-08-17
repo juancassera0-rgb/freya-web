@@ -70,12 +70,6 @@ export default function NosotrosPage() {
                 Ver desarrollos
                 <span aria-hidden>→</span>
               </Link>
-              <Link className={styles.ctaText} href="/asesor">
-                Hablar con un asesor
-              </Link>
-              <Link className={styles.ctaText} href="/contacto">
-                Contacto
-              </Link>
             </div>
           </section>
         </ScrollReveal>

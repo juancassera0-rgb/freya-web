@@ -118,45 +118,6 @@
   color: #fff;
 }
 
-/* Brand: CTA con cuadrado m² · Illoca: microinteracción */
-.cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
-  padding-bottom: 0.15rem;
-  border-bottom: 1px solid var(--accent);
-  transition:
-    gap var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) ease,
-    border-color var(--dur-fast) ease;
-}
-
-.ctaSq {
-  width: 0.55rem;
-  height: 0.55rem;
-  border: 1px solid currentColor;
-  flex-shrink: 0;
-  transition: background var(--dur-fast) ease;
-}
-
-.cta:hover {
-  gap: 0.75rem;
-}
-
-.cta:hover .ctaSq {
-  background: currentColor;
-}
-
-.header[data-transparent="true"] .cta {
-  color: var(--off-white);
-  border-bottom-color: rgba(246, 246, 246, 0.8);
-}
-
 .menuBtn {
   position: relative;
   z-index: 70;
@@ -336,7 +297,7 @@
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.14em;
-  color: color-mix(in srgb, var(--off-white) 45%, #c4b79a);
+  color: color-mix(in srgb, var(--off-white) 45%, var(--camo-tint));
   min-width: 1.75rem;
   transform: translate3d(0, 8px, 0);
   opacity: 0;
@@ -360,7 +321,7 @@
 
 .overlayLink:hover .overlayLabel,
 .overlayLink[data-active="true"] .overlayLabel {
-  color: #c4b79a;
+  color: var(--camo-tint);
 }
 
 /* Columnas laterales del overlay — proyectos + contacto */
@@ -394,7 +355,7 @@
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #c4b79a;
+  color: var(--camo-tint);
 }
 
 .overlayProjects {
@@ -440,7 +401,7 @@
 }
 
 .overlayContact:hover {
-  border-bottom-color: #c4b79a;
+  border-bottom-color: var(--camo-tint);
 }
 
 .overlayContactMeta {

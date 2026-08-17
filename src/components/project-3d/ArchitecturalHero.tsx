@@ -1,171 +1,45 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useRef } from "react";
 import { MaskReveal } from "@/components/experience/MaskReveal";
 import { MagneticCTA } from "@/components/experience/MagneticCTA";
-import { useScrollProgress } from "@/components/experience/useScrollProgress";
-import type { Project } from "@/data/projects";
-import type { Project3DConfig } from "@/data/project3d";
-import { usePerfFlags } from "./useClientFlags";
-import { useBlockPageZoom } from "./useBlockPageZoom";
-import { useCanvasActive } from "./useCanvasActive";
-import { FRAMING, useViewportClass } from "./useViewportClass";
+import { FreyaLogo } from "@/components/FreyaLogo";
 import styles from "./ArchitecturalHero.module.css";
 
-/** Three.js queda fuera del bundle de la home hasta que hace falta */
-const MassingCanvas = dynamic(() => import("./MassingCanvas"), {
-  ssr: false,
-  loading: () => <div className={styles.canvasFallback} />,
-});
-
-type Props = {
-  project: Project;
-  config: Project3DConfig;
-  /** Zonas donde la desarrolladora tiene obra entregada */
-  zones: readonly string[];
-};
-
 /**
- * Hero cinematográfico. La arquitectura es el sujeto; la tipografía enmarca.
+ * Primera pantalla — calma en vez de escena 3D.
  *
- * Secuencia de entrada: escena → marca → headline → metadata → scroll hint.
- * Durante el scroll la cámara se aproxima al volumen (CameraRig lee progress).
+ * Antes esta sección pineaba 260vh de scroll para animar una cámara sobre
+ * un edificio 3D. El brief pide algo más silencioso: logo grande, muy poco
+ * texto, una imagen quieta tratada en el verde de marca. Sin cámara, sin
+ * pin de scroll — una sola pantalla que sigue de largo hacia el resto de
+ * la home.
+ *
+ * La imagen es un stand-in (`/images/services/espacios.jpg`, ya existente
+ * en el repo) — pendiente de reemplazo por fotografía de arquitectura real
+ * tratada en verde, según el brief.
  */
-export function ArchitecturalHero({ project, config, zones }: Props) {
-  const sectionRef = useRef<HTMLElement>(null);
-  const { reducedMotion, lite, touch, tier, webglOk } = usePerfFlags();
-  const framing = FRAMING[useViewportClass()];
-  const enabled = !reducedMotion && webglOk;
-  /* El 3D lee el progreso continuo por ref; React no re-renderiza al scrollear */
-  const { rawRef } = useScrollProgress(sectionRef, { enabled, steps: 1 });
-  const { active } = useCanvasActive(sectionRef, { rootMargin: "0px" });
-
-  /* Es lo primero que ve un visitante en el celular: dos dedos acá dejaban
-     la home zoomeada antes de haber leído una línea. */
-  useBlockPageZoom(sectionRef, touch);
-
-  const year = new Date().getFullYear();
-
+export function ArchitecturalHero() {
   return (
-    <section
-      ref={sectionRef}
-      className={styles.root}
-      aria-label={`${project.name} — presentación`}
-    >
-      <div className={styles.sticky}>
-        {/* Capa 3D */}
-        <div className={styles.stage} aria-hidden={enabled ? undefined : true}>
-          {enabled ? (
-            <MassingCanvas
-              config={config}
-              variant="hero"
-              cameraProgressRef={rawRef}
-              lite={lite}
-              tier={tier}
-              touch={touch}
-              framing={framing}
-              enablePointerParallax={!lite}
-              active={active}
-            />
-          ) : (
-            <div
-              className={styles.poster}
-              style={{ backgroundImage: `url(${project.coverImage})` }}
-              role="img"
-              aria-label={`${project.name}, ${project.neighborhood}`}
-            />
-          )}
-          <div className={styles.vignette} aria-hidden />
-        </div>
+    <section className={styles.root} aria-label="Freya">
+      <div className={styles.image} aria-hidden />
+      <div className={styles.wash} aria-hidden />
 
-        {/* Retícula estructural de fondo */}
-        <div className={styles.gridLines} aria-hidden>
-          <span /><span /><span /><span /><span />
-        </div>
+      <div className={styles.ui}>
+        <MaskReveal immediate delay={120}>
+          <FreyaLogo variant="hero" priority />
+        </MaskReveal>
 
-        {/* Capa tipográfica */}
-        <div className={styles.ui}>
-          <header className={styles.topMeta}>
-            <MaskReveal immediate delay={150}>
-              <span className={styles.wordmark}>FREYA</span>
-            </MaskReveal>
-            <MaskReveal immediate delay={260}>
-              <span className={styles.metaLine}>
-                Desarrollos residenciales · Buenos Aires
-              </span>
-            </MaskReveal>
-          </header>
-
-          <div className={styles.headlineBlock}>
-            <MaskReveal
-              as="h1"
-              className={styles.headline}
-              lines={["Arquitectura", "para una nueva", "forma de vivir"]}
-              immediate
-              delay={380}
-            />
-          </div>
-
-          <footer className={styles.bottomMeta}>
-            <MaskReveal immediate delay={760}>
-              <div className={styles.focusCard}>
-                <span className={styles.focusLabel}>Proyecto en foco</span>
-                <Link
-                  href={`/desarrollos/${project.slug}`}
-                  className={styles.focusName}
-                  data-cursor="Ver"
-                >
-                  {project.name}
-                </Link>
-                <span className={styles.focusPlace}>
-                  {project.neighborhood} · {project.typologies}
-                </span>
-              </div>
-            </MaskReveal>
-
-            <MaskReveal immediate delay={860}>
-              <dl className={styles.specs}>
-                <div>
-                  <dt>Zonas</dt>
-                  <dd>{zones.length}</dd>
-                </div>
-                <div>
-                  <dt>Trayectoria</dt>
-                  <dd>20+ años</dd>
-                </div>
-                <div>
-                  <dt>Año</dt>
-                  <dd>{year}</dd>
-                </div>
-              </dl>
-            </MaskReveal>
-
-            <MaskReveal immediate delay={960}>
-              <div className={styles.actions}>
-                <MagneticCTA href={`/desarrollos/${project.slug}`} variant="dark">
-                  Entrar al proyecto
-                </MagneticCTA>
-                <MagneticCTA href="/desarrollos" variant="ghost">
-                  Ver desarrollos
-                </MagneticCTA>
-              </div>
-            </MaskReveal>
-          </footer>
-
-          <div className={styles.scrollHint} aria-hidden>
-            <span className={styles.scrollLabel}>Scroll</span>
-            <span className={styles.scrollBar} />
-          </div>
-        </div>
-
-        {config.status === "placeholder" ? (
-          <p className={styles.badge} role="note">
-            Volumetría conceptual — no representa la geometría definitiva del
-            edificio.
+        <MaskReveal immediate delay={360}>
+          <p className={styles.tagline}>
+            Desarrollos residenciales · Buenos Aires
           </p>
-        ) : null}
+        </MaskReveal>
+
+        <MaskReveal immediate delay={520}>
+          <MagneticCTA href="/desarrollos" variant="ghost" className={styles.cta}>
+            Ver desarrollos
+          </MagneticCTA>
+        </MaskReveal>
       </div>
     </section>
   );

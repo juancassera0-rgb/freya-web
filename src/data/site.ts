@@ -13,14 +13,12 @@ export const site = {
   name: "Freya",
   tagline: "Desarrollos residenciales con obra propia y personalización real",
   description:
-    "Desde Pinamar a Buenos Aires, desarrollamos edificios residenciales en barrios con proyección: Caballito, Saavedra, Villa Devoto y más.",
+    "Desarrollamos edificios residenciales en Buenos Aires, en barrios con proyección: Caballito, Saavedra, Villa Devoto y más.",
   url: "https://www.estudiofreya.com",
   contact: {
     email: "contacto@estudiofreya.com",
     phoneDisplay: "+54 11 5555-0100",
     phoneTel: "+541155550100",
-    /** Formato internacional sin + ni espacios, para wa.me */
-    whatsapp: "5491155550100",
     address: "Buenos Aires, Argentina",
     hours: "Lunes a viernes, 10 a 18 hs",
   },
@@ -49,18 +47,17 @@ export const site = {
       durationMs: 2000,
     },
     {
-      value: 4,
+      value: 3,
       label: "Zonas con obra entregada",
       durationMs: 1200,
     },
   ] satisfies SiteStat[],
-  zones: ["Caballito", "Saavedra", "Villa Devoto", "Pinamar"],
+  zones: ["Caballito", "Saavedra", "Villa Devoto"],
 } as const;
 
-export function whatsappUrl(message?: string) {
-  const base = `https://wa.me/${site.contact.whatsapp}`;
-  if (!message) return base;
-  return `${base}?text=${encodeURIComponent(message)}`;
+export function mailtoUrl(email: string, body?: string) {
+  if (!body) return `mailto:${email}`;
+  return `mailto:${email}?body=${encodeURIComponent(body)}`;
 }
 
 export function formatStatNumber(

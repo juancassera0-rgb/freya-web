@@ -109,7 +109,7 @@ export function RenderViewer({
       <div className={styles.ui}>
         <header className={styles.head}>
           <div className={styles.headMeta}>
-            <span className={styles.unit}>Unidad {unitCode}</span>
+            <span className={styles.unit}>Cuadrado {unitCode}</span>
             <span className={styles.roomName}>{room.label}</span>
           </div>
           <button type="button" className={styles.close} onClick={onClose}>

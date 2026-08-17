@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { ProjectFacts } from "@/components/ProjectFacts";
 import { ProjectGallery } from "@/components/ProjectGallery";
-import { ContactForm } from "@/components/ContactForm";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { MaskReveal } from "@/components/experience/MaskReveal";
 import { ProjectDetailHero } from "@/components/experience/ProjectDetailHero";
@@ -12,7 +10,6 @@ import { DigitalSalesCenter } from "@/components/project-3d/DigitalSalesCenter";
 import { ProjectStory3D } from "@/components/project-3d/ProjectStory3D";
 import { getProject, projects } from "@/data/projects";
 import { getProject3D } from "@/data/project3d";
-import { whatsappUrl } from "@/data/site";
 import styles from "./page.module.css";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -37,7 +34,7 @@ export default async function ProjectPage({ params }: Props) {
   if (!project) notFound();
 
   const isActive = project.status === "en-comercializacion";
-  const statusLabel = isActive ? "En comercialización" : "Finalizado";
+  const statusLabel = isActive ? "En comercialización" : "Cerrado";
   const project3d = getProject3D(project.slug);
 
   return (
@@ -46,7 +43,6 @@ export default async function ProjectPage({ params }: Props) {
         project={project}
         statusLabel={statusLabel}
         isActive={isActive}
-        whatsappHref={whatsappUrl(project.ctaMessage)}
       />
 
       {/* Storytelling — el proyecto y su barrio */}
@@ -127,100 +123,21 @@ export default async function ProjectPage({ params }: Props) {
 
           <ScrollReveal delay={100}>
             <div className={styles.commercial}>
-              <h3>
-                {isActive
-                  ? "Información comercial"
-                  : "Proyecto finalizado"}
-              </h3>
+              <h3>{isActive ? "Disponibilidad" : "Cerrado"}</h3>
               <p>
                 {isActive
-                  ? "Precios, disponibilidad, financiación y fecha estimada de entrega se informan de forma personalizada."
-                  : "Esta obra ya fue entregada. Sirve como respaldo de ejecución de Freya; si buscás unidades actuales, consultá los desarrollos en comercialización."}
+                  ? "Se entra por lista, al pie del sitio."
+                  : "Este proyecto ya no está en comercialización."}
               </p>
               <div className={styles.heroActions}>
-                {isActive ? (
-                  <>
-                    <a
-                      className={styles.ctaPrimary}
-                      href={whatsappUrl(project.ctaMessage)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      WhatsApp
-                      <span aria-hidden>→</span>
-                    </a>
-                    <Link className={styles.ctaText} href="/desarrollos">
-                      Volver a desarrollos
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      className={styles.ctaPrimary}
-                      href="/desarrollos"
-                    >
-                      Ver desarrollos activos
-                      <span aria-hidden>→</span>
-                    </Link>
-                    <Link className={styles.ctaText} href="/asesor">
-                      Hablar con un asesor
-                    </Link>
-                  </>
-                )}
+                <Link className={styles.ctaText} href="/desarrollos">
+                  {isActive ? "Volver a desarrollos" : "Ver desarrollos activos"}
+                </Link>
               </div>
             </div>
           </ScrollReveal>
         </div>
       </section>
-
-      {isActive && (
-        <section className={`section ${styles.formSection}`}>
-          <div className="container grid-2">
-            <ScrollReveal from="left">
-              <p className="eyebrow">Consulta</p>
-              <h2>Escribinos por {project.shortName}</h2>
-              <p className="lead" style={{ marginTop: "0.85rem" }}>
-                Un asesor te responde por tipologías, disponibilidad y visita.
-              </p>
-            </ScrollReveal>
-            <ScrollReveal from="right" delay={100}>
-              <Suspense fallback={<p>Cargando formulario…</p>}>
-                <ContactForm defaultProject={project.slug} />
-              </Suspense>
-            </ScrollReveal>
-          </div>
-        </section>
-      )}
-
-      {isActive && (
-        <div className={styles.stickyBar}>
-          <div className={`container ${styles.stickyInner}`}>
-            <p>
-              <strong>{project.name}</strong>
-              <span>
-                {project.neighborhood} · {project.typologies}
-              </span>
-            </p>
-            <div className={styles.stickyActions}>
-              <a
-                className={styles.stickyText}
-                href={whatsappUrl(project.ctaMessage)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                WhatsApp
-              </a>
-              <Link
-                className={styles.stickyPrimary}
-                href={`/asesor?proyecto=${project.slug}`}
-              >
-                Consultar
-                <span aria-hidden>→</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

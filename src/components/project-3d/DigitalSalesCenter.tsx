@@ -199,18 +199,12 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
     });
   }, []);
 
-  const asesorHref = selectedUnit
-    ? `/asesor?proyecto=${config.projectSlug}&unidad=${encodeURIComponent(selectedUnit.code)}&piso=${selectedUnit.floor}`
-    : selectedFloor
-      ? `/asesor?proyecto=${config.projectSlug}&piso=${selectedFloor}`
-      : `/asesor?proyecto=${config.projectSlug}`;
-
   const stageLabel =
     stage === "building"
       ? "Edificio"
       : stage === "floor"
         ? `Piso ${selectedFloor}`
-        : `Unidad ${selectedUnit?.code ?? ""}`;
+        : `Cuadrado ${selectedUnit?.code ?? ""}`;
 
   return (
     <section
@@ -249,7 +243,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
           className={styles.crumb}
         >
           <span className={styles.crumbIndex}>03</span>
-          {selectedUnit ? `Unidad ${selectedUnit.code}` : "Unidad"}
+          {selectedUnit ? `Cuadrado ${selectedUnit.code}` : "Cuadrado"}
         </button>
       </nav>
 
@@ -284,7 +278,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
                     </span>
                     <span className={styles.floorLabel}>{floor.label}</span>
                     <span className={styles.floorUnits}>
-                      {floor.unitIds.length} unid.
+                      {floor.unitIds.length} cuadr.
                     </span>
                   </button>
                 ))}
@@ -295,7 +289,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
           {stage === "floor" && selectedFloor != null && (
             <div className={styles.stageBlock}>
               <p className={styles.hint}>
-                Unidades del piso {selectedFloor}. Elegí una para abrir su
+                Cuadrados del piso {selectedFloor}. Elegí uno para abrir su
                 planta.
               </p>
               <div className={styles.unitList} role="list">
@@ -396,8 +390,8 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
                 </div>
               </dl>
 
-              <Link className={styles.cta} href={asesorHref}>
-                Consultar por unidad {selectedUnit.code}
+              <Link className={styles.cta} href="/#contacto">
+                Se entra por lista
                 <span aria-hidden>→</span>
               </Link>
 
@@ -449,11 +443,11 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
             <div className={styles.fallback}>
               <p>
                 {reducedMotion
-                  ? "Vista 3D desactivada por preferencia de movimiento reducido. El recorrido por pisos y unidades sigue disponible en el panel."
+                  ? "Vista 3D desactivada por preferencia de movimiento reducido. El recorrido por pisos y cuadrados sigue disponible en el panel."
                   : contextLost
-                    ? "La escena 3D se interrumpió en este dispositivo. Podés seguir explorando pisos, unidades y planos desde el panel."
+                    ? "La escena 3D se interrumpió en este dispositivo. Podés seguir explorando pisos, cuadrados y planos desde el panel."
                     : !webglOk
-                      ? "WebGL no disponible en este dispositivo. Podés explorar pisos, unidades y planos desde el panel."
+                      ? "WebGL no disponible en este dispositivo. Podés explorar pisos, cuadrados y planos desde el panel."
                       : "Preparando la escena…"}
               </p>
             </div>
@@ -480,7 +474,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
           {!touch && stage === "building" && hoveredFloor != null && (
             <p className={styles.hoverTag}>
               Piso {hoveredFloor} ·{" "}
-              {getUnitsForFloor(config, hoveredFloor).length} unidades
+              {getUnitsForFloor(config, hoveredFloor).length} cuadrados
             </p>
           )}
 
