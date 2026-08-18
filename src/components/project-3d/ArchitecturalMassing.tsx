@@ -78,8 +78,13 @@ const GARAGE_W = INNER_W * 0.62;
 const SOLID_W = INNER_W * 0.14;
 const GLASS_W = INNER_W - SOLID_W;
 const BAYS = 4;
+const OPENING_H = FLOOR_H - SLAB_T - 0.012;
+/** Dintel sobre el vidrio; un poco más atrás que el paño izquierdo. */
+const BAND_H = OPENING_H * 0.2;
+const GLASS_OPEN_H = OPENING_H - BAND_H;
 /** El paño ciego vuela un poco más que el plano de vidrio. */
 const APT_WALL_D = 0.07;
+const BAND_D = 0.048;
 
 const COL = {
   stucco: SITE.stucco,
@@ -279,16 +284,16 @@ export function ArchitecturalMassing({
      Si la losa es un solo bloque del tamaño del lote, perfora las
      paredes: se lee como bug, no como arquitectura. */
   const geo = useMemo(() => {
-    const glassH = FLOOR_H - SLAB_T - 0.012;
     const bayW = GLASS_W / BAYS;
     return {
       floorPlate: new THREE.BoxGeometry(INNER_W, SLAB_T, PLATE_D),
       balcony: new THREE.BoxGeometry(BALC_W, SLAB_T, BALC_D),
       fasciaStrip: new THREE.BoxGeometry(BALC_W, SLAB_T + 0.004, 0.016),
-      aptWall: new THREE.BoxGeometry(SOLID_W - 0.012, glassH, APT_WALL_D),
-      glassBay: new THREE.BoxGeometry(bayW - 0.016, glassH, 0.01),
-      rearGlass: new THREE.BoxGeometry(bayW - 0.02, glassH * 0.78, 0.01),
-      mullion: new THREE.BoxGeometry(0.011, glassH, 0.014),
+      aptWall: new THREE.BoxGeometry(SOLID_W - 0.012, OPENING_H, APT_WALL_D),
+      upperBand: new THREE.BoxGeometry(GLASS_W - 0.008, BAND_H, BAND_D),
+      glassBay: new THREE.BoxGeometry(bayW - 0.016, GLASS_OPEN_H, 0.01),
+      rearGlass: new THREE.BoxGeometry(bayW - 0.02, OPENING_H * 0.78, 0.01),
+      mullion: new THREE.BoxGeometry(0.011, GLASS_OPEN_H, 0.014),
       rear: new THREE.BoxGeometry(W, 1, WALL),
       side: new THREE.BoxGeometry(WALL, 1, SIDE_D),
       interiorRear: new THREE.BoxGeometry(INNER_W - 0.02, 1, 0.018),
@@ -485,8 +490,9 @@ export function ArchitecturalMassing({
             ? mat.slabEmph
             : mat.slabBase;
         const railMat = dimmed ? mat.railDim : mat.railBase;
-        const glassH = FLOOR_H - SLAB_T - 0.012;
-        const glassY = SLAB_T / 2 + glassH / 2;
+        const wallY = SLAB_T / 2 + OPENING_H / 2;
+        const glassY = SLAB_T / 2 + GLASS_OPEN_H / 2;
+        const bandY = SLAB_T / 2 + GLASS_OPEN_H + BAND_H / 2;
         const balcScaleZ = setback ? 0.42 : 1;
         const balcZ = setback
           ? BALC_START + (BALC_D * balcScaleZ) / 2
@@ -548,7 +554,18 @@ export function ArchitecturalMassing({
 
             <mesh
               geometry={geo.aptWall}
-              position={[aptWallX, glassY, facadeZ + APT_WALL_D / 2]}
+              position={[aptWallX, wallY, facadeZ + APT_WALL_D / 2]}
+              castShadow={!lite}
+              receiveShadow
+              material={mat.stucco}
+            />
+            <mesh
+              geometry={geo.upperBand}
+              position={[
+                glassStart + GLASS_W / 2,
+                bandY,
+                facadeZ + BAND_D / 2,
+              ]}
               castShadow={!lite}
               receiveShadow
               material={mat.stucco}
