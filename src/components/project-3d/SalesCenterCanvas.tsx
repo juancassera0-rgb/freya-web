@@ -104,7 +104,7 @@ export default function SalesCenterCanvas({
             extract={extractTarget}
             /* Sin balanceo en táctil: en un teléfono el movimiento
                autónomo se confunde con inestabilidad. */
-            idleSway={!touch}
+            idleSway={false}
           />
           {!lite && stage === "building" && (
             <HotspotMarkers

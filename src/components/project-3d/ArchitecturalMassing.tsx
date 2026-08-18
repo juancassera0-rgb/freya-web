@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, type RefObject } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import type { Project3DConfig } from "@/data/project3d";
 import { BRAND, SITE } from "./sceneTokens";
@@ -10,6 +10,7 @@ import {
   getConcreteNormalMap,
   getConcreteRoughnessMap,
 } from "./proceduralTextures";
+import { SITE_DIMS } from "./siteDims";
 
 type Props = {
   config: Project3DConfig;
@@ -34,14 +35,9 @@ type Props = {
 };
 
 /* --------------------------------------------------------------------------
-   PROPORCIONES — derivadas de los renders del proyecto.
+   PROPORCIONES — derivadas de los renders del proyecto (ver siteDims.ts).
    -------------------------------------------------------------------------- */
-const W = 1.62;
-const D = 2.45;
-const FLOOR_H = 0.4;
-const GROUND_H = 0.62;
-const SLAB_T = 0.052;
-const CANTILEVER = 0.3;
+const { W, D, FLOOR_H, GROUND_H, SLAB_T, CANTILEVER } = SITE_DIMS;
 const RAIL_H = 0.13;
 const PARTY_EXTRA = 0.55;
 
@@ -72,7 +68,7 @@ export function ArchitecturalMassing({
   onHoverFloor,
   onSelectFloor,
   extract = 0,
-  idleSway = true,
+  idleSway = false,
 }: Props) {
   const group = useRef<THREE.Group>(null);
   const slabRefs = useRef<Map<number, THREE.Group>>(new Map());
@@ -197,7 +193,7 @@ export function ArchitecturalMassing({
   }, []);
 
   // Libera materiales al desmontar — evita fugas entre navegaciones
-  useMemo(() => {
+  useEffect(() => {
     return () => Object.values(mat).forEach((m) => m.dispose());
   }, [mat]);
 
@@ -216,7 +212,7 @@ export function ArchitecturalMassing({
     [],
   );
 
-  useMemo(() => {
+  useEffect(() => {
     return () => Object.values(geo).forEach((g) => g.dispose());
   }, [geo]);
 

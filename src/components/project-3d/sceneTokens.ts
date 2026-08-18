@@ -158,8 +158,9 @@ export const MOOD = {
     keyIntensity: 1.95,
     ambientIntensity: 0.3,
     exposure: 1.1,
-    fogNear: 16,
-    fogFar: 46,
+    /* fogFar debe quedar DENTRO de camera.far (40) o el cielo/árboles "pop". */
+    fogNear: 12,
+    fogFar: 36,
   },
   dusk: {
     key: mix(OFF_WHITE, CAMO, 0.28), // sol bajo, cálido
@@ -169,8 +170,8 @@ export const MOOD = {
     keyIntensity: 1.5,
     ambientIntensity: 0.26,
     exposure: 1.16,
-    fogNear: 12,
-    fogFar: 38,
+    fogNear: 10,
+    fogFar: 34,
   },
 } as const;
 

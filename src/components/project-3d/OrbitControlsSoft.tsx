@@ -13,27 +13,24 @@ type Props = {
 /**
  * Orbit suave — explorador, no videojuego.
  *
- * En táctil se anula el gesto de dos dedos igual que en SalesCenterScene:
- * OrbitControls no puede impedir el zoom de página de Safari, así que si
- * el gesto no está interceptado por un listener no pasivo del contenedor,
- * lo mejor es no invitarlo. Las escenas que usan este componente son de
- * recorrido, no de análisis, y no necesitan zoom.
+ * Se mantiene montado y se controla con `enabled` (no unmount) para evitar
+ * thrash de controles al activar/desactivar. En táctil se anula el gesto
+ * de dos dedos: OrbitControls no puede impedir el zoom de página de Safari.
  */
 export function OrbitControlsSoft({
   enabled = true,
   target = [0, 1.8, 0],
   touch = false,
 }: Props) {
-  if (!enabled) return null;
-
   return (
     <OrbitControls
       makeDefault
+      enabled={enabled}
       enablePan={false}
       enableDamping
-      dampingFactor={touch ? 0.1 : 0.06}
-      rotateSpeed={0.45}
-      zoomSpeed={0.55}
+      dampingFactor={touch ? 0.085 : 0.06}
+      rotateSpeed={touch ? 0.36 : 0.42}
+      zoomSpeed={0.5}
       enableZoom={!touch}
       touches={{
         ONE: THREE.TOUCH.ROTATE,

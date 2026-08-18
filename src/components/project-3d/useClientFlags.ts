@@ -28,13 +28,25 @@ function subscribeWebGL(onStoreChange: () => void) {
   return () => {};
 }
 
+/** Una sola sonda — crear contextos en cada snapshot agota el límite del browser. */
+let webglCached: boolean | null = null;
+
 function getWebGLSnapshot() {
+  if (webglCached != null) return webglCached;
   try {
     const canvas = document.createElement("canvas");
-    return Boolean(
-      canvas.getContext("webgl") || canvas.getContext("experimental-webgl"),
-    );
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    webglCached = Boolean(gl);
+    if (gl && "getExtension" in gl) {
+      const lose = (
+        gl as WebGLRenderingContext
+      ).getExtension("WEBGL_lose_context");
+      lose?.loseContext();
+    }
+    return webglCached;
   } catch {
+    webglCached = false;
     return false;
   }
 }

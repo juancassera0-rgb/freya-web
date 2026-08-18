@@ -68,8 +68,8 @@ const SHOTS_TOUCH: typeof SHOTS = {
   unit: { position: [0, 4.5, 4.1], target: [0, 0.2, 0] },
 };
 
-/** Umbral bajo el cual se considera que la cámara llegó al encuadre */
-const SETTLE_EPS = 0.012;
+/** Umbral (dist²) — snap rápido para no pelear con el damping del orbit */
+const SETTLE_EPS = 0.0025;
 
 /** Límites de distancia por etapa — el pinch los respeta */
 const DOLLY_RANGE: Record<SalesStage, [number, number]> = {
@@ -177,7 +177,10 @@ function DirectedCamera({
 
     transitioning.current = true;
     const controls = orbitRef.current;
-    if (controls) controls.enabled = false;
+    if (controls) {
+      controls.enabled = false;
+      controls.enableDamping = false;
+    }
     invalidate();
   }, [
     stage,
@@ -212,6 +215,7 @@ function DirectedCamera({
       camera.position.copy(targetPos.current);
       if (controls) {
         controls.target.copy(targetLook.current);
+        controls.enableDamping = true;
         controls.update();
         /* Sólo se devuelve el control si la escena tiene el gesto. En
            táctil sin activar, los controles quedan apagados: así el dedo
@@ -309,10 +313,8 @@ export function SalesCenterScene({
         position: shots.building.position,
         fov: framing.fov,
         near: 0.35,
-        /* far 34, no 48: nada de la escena está más lejos que el domo de
-           cielo, y un rango de profundidad más corto da precisión de
-           z-buffer donde importa. Menos z-fighting en las losas. */
-        far: 34,
+        /* Alineado a SkyDome (~32) y fogFar day (36). */
+        far: 40,
       }}
       /* "soft" (PCFSoftShadowMap) está deprecado en esta versión de three
          y se degrada en silencio a sombras duras. "variance" (VSMShadowMap)
@@ -400,11 +402,11 @@ export function SalesCenterScene({
         <ContactShadows
           position={[0, isUnit ? -0.06 : 0.062, 0]}
           opacity={0.32}
-          scale={isUnit ? 8 : 15}
-          blur={2.6}
-          far={5}
+          scale={isUnit ? 8 : 12}
+          blur={2.4}
+          far={4.5}
           resolution={high ? 512 : 256}
-          frames={60}
+          frames={1}
           color={BRAND.offBlack}
         />
       )}
@@ -423,9 +425,9 @@ export function SalesCenterScene({
         enabled={interactive}
         enablePan={false}
         enableDamping
-        dampingFactor={touch ? 0.11 : 0.07}
-        rotateSpeed={touch ? 0.42 : 0.42}
-        zoomSpeed={0.5}
+        dampingFactor={touch ? 0.085 : 0.065}
+        rotateSpeed={touch ? 0.36 : 0.4}
+        zoomSpeed={0.48}
         enableZoom={!touch}
         touches={{
           ONE: THREE.TOUCH.ROTATE,

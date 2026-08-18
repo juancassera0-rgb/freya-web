@@ -88,12 +88,10 @@ export function Project3DScene({
           start.position[2] * framing.distance,
         ],
         fov: isHero ? framing.fov - 2 : framing.fov,
-        /* near 0.35 y far 34: rango de profundidad ajustado a la escena
-           real. Con near 0.1 y far 48 se desperdiciaba precisión de
-           z-buffer en un rango que nada ocupa, y eso se veía como
-           parpadeo entre losas y barandas en ángulos rasantes. */
+        /* far ≥ SkyDome (~32) y ≥ fogFar (36) — si far < domo, el cielo
+           y el contexto lejano desaparecen / hacen pop al orbitar. */
         near: 0.35,
-        far: 34,
+        far: 40,
       }}
       /* "soft" (PCFSoftShadowMap) está deprecado en esta versión de three —
          el renderer lo degrada en silencio a sombras duras (PCF) sin avisar
@@ -161,20 +159,20 @@ export function Project3DScene({
       <ambientLight intensity={mood.ambientIntensity} color={mood.ambient} />
       <hemisphereLight args={[mood.horizon, SITE.grass, isHero ? 0.35 : 0.42]} />
 
-      {/* Emplazamiento: vereda, cordón, calzada, canteros y arbolado */}
+      {/* Emplazamiento: vereda, cordón, calzada, tipas laterales */}
       <SiteContext mood={sceneMood} detail={tier} />
-      {/* Manzana vecina: profundidad urbana detrás del lote */}
-      <NeighbourContext detail={tier} />
+      {/* Medianeras ciegas — contexto Beauchef, sin ciudad procedural */}
+      <NeighbourContext detail={tier} floors={config.schematicFloors} />
 
       {!low && (
         <ContactShadows
           position={[0, 0.06, 0]}
           opacity={isHero ? 0.42 : 0.32}
-          scale={14}
-          blur={2.4}
-          far={4.5}
+          scale={12}
+          blur={2.2}
+          far={4.2}
           resolution={high ? 512 : 256}
-          frames={60}
+          frames={1}
           color={BRAND.offBlack}
         />
       )}

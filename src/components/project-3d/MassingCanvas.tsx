@@ -62,6 +62,7 @@ export default function MassingCanvas({
         explodeRef={explodeRef}
         highlightedFloor={highlightedFloor}
         dimOthers={dimOthers}
+        idleSway={false}
       />
     </Project3DScene>
   );

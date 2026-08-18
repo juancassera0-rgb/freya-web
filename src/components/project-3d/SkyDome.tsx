@@ -30,7 +30,8 @@ type Props = {
 export function SkyDome({
   mood,
   clouds = true,
-  radius = 60,
+  /* Radio acotado al far de cámara (~40): un domo de 60 se clippeaba. */
+  radius = 32,
   detail = "high",
 }: Props) {
   const uniforms = useMemo(
