@@ -55,17 +55,20 @@ const FIT = 0.016;
 const INNER_W = W - WALL * 2 - FIT * 2;
 const PLATE_D = CORE_D - WALL - FIT * 2;
 const PLATE_Z = (BACK_Z + WALL + FIT + FRONT_Z - FIT) / 2;
-/** Medianeras hasta el canto: el balcón queda inscrito, sin volar a los lados. */
+/** Medianeras se detienen en este plano; el balcón vuela un poco más en Z. */
 const SIDE_FRONT = FRONT_Z + CANTILEVER;
 const SIDE_D = SIDE_FRONT - (BACK_Z + WALL);
 const SIDE_Z = (BACK_Z + WALL + SIDE_FRONT) / 2;
 /** Losa a tope con la cara interior de las medianeras — sin hueco ni overflow. */
 const BALC_W = W - WALL * 2 - 0.008;
+/** Solo profundidad: la losa sobresale del frente de las medianeras. */
+const BALC_OVERHANG = 0.085;
+const BALC_D = CANTILEVER + BALC_OVERHANG;
 const BALC_START = FRONT_Z;
-const BALC_Z = BALC_START + CANTILEVER / 2;
-const RAIL_Z = SIDE_FRONT - 0.014;
+const BALC_Z = BALC_START + BALC_D / 2;
+const RAIL_Z = BALC_START + BALC_D - 0.014;
 const RAIL_H = 0.1;
-const PICK_Z = (BACK_Z + WALL + FIT + SIDE_FRONT) / 2;
+const PICK_Z = (BACK_Z + WALL + FIT + BALC_START + BALC_D) / 2;
 const LOBBY_W = INNER_W * 0.34;
 const GARAGE_W = INNER_W * 0.62;
 /** Paño ciego izquierdo angosto; el resto es vidrio recedido. */
@@ -277,7 +280,7 @@ export function ArchitecturalMassing({
     const bayW = GLASS_W / BAYS;
     return {
       floorPlate: new THREE.BoxGeometry(INNER_W, SLAB_T, PLATE_D),
-      balcony: new THREE.BoxGeometry(BALC_W, SLAB_T, CANTILEVER),
+      balcony: new THREE.BoxGeometry(BALC_W, SLAB_T, BALC_D),
       fasciaStrip: new THREE.BoxGeometry(BALC_W, SLAB_T + 0.004, 0.016),
       aptWall: new THREE.BoxGeometry(SOLID_W - 0.012, glassH, APT_WALL_D),
       glassBay: new THREE.BoxGeometry(bayW - 0.016, glassH, 0.01),
@@ -289,7 +292,7 @@ export function ArchitecturalMassing({
       interiorSide: new THREE.BoxGeometry(0.018, 1, SIDE_D - FIT * 2),
       rail: new THREE.BoxGeometry(BALC_W - 0.05, RAIL_H, 0.007),
       kick: new THREE.BoxGeometry(BALC_W - 0.05, 0.01, 0.012),
-      pick: new THREE.BoxGeometry(INNER_W, FLOOR_H * 0.95, PLATE_D + CANTILEVER),
+      pick: new THREE.BoxGeometry(INNER_W, FLOOR_H * 0.95, PLATE_D + BALC_D),
       lobbyGlass: new THREE.BoxGeometry(LOBBY_W - 0.02, GROUND_H * 0.86, 0.01),
       slat: new THREE.BoxGeometry(0.013, GROUND_H * 0.86, 0.02),
       spot: new THREE.CylinderGeometry(0.016, 0.016, 0.006, 10),
@@ -481,9 +484,9 @@ export function ArchitecturalMassing({
         const glassY = SLAB_T / 2 + glassH / 2;
         const balcScaleZ = setback ? 0.42 : 1;
         const balcZ = setback
-          ? BALC_START + (CANTILEVER * balcScaleZ) / 2
+          ? BALC_START + (BALC_D * balcScaleZ) / 2
           : BALC_Z;
-        const railZ = setback ? BALC_START + CANTILEVER * balcScaleZ - 0.014 : RAIL_Z;
+        const railZ = setback ? BALC_START + BALC_D * balcScaleZ - 0.014 : RAIL_Z;
 
         return (
           <group
