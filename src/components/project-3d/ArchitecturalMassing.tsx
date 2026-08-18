@@ -43,7 +43,7 @@ const { W, FLOOR_H, GROUND_H, SLAB_T, CANTILEVER, WALL, FRONT_Z, BACK_Z } =
    ENVOLVENTE — un prisma que CIERRA.
 
      FRONT_Z  vidrio a la calle
-     BACK_Z   contrafrente (ciego)
+     BACK_Z   contrafrente (con paños de vidrio)
      LEFT/RIGHT medianeras del lote, unidas a losas y contrafrente
 
    Sin esto el edificio es un sandwich abierto: se ve el cielo entre
@@ -55,19 +55,23 @@ const FIT = 0.016;
 const INNER_W = W - WALL * 2 - FIT * 2;
 const PLATE_D = CORE_D - WALL - FIT * 2;
 const PLATE_Z = (BACK_Z + WALL + FIT + FRONT_Z - FIT) / 2;
-/** Medianeras hasta el canto del balcón: el marco blanco de los renders. */
-const SIDE_FRONT = FRONT_Z + CANTILEVER;
+/** Medianeras un poco más cortas que el canto: el balcón vuela un poco más. */
+const SIDE_FRONT = FRONT_Z + CANTILEVER - 0.055;
 const SIDE_D = SIDE_FRONT - (BACK_Z + WALL);
 const SIDE_Z = (BACK_Z + WALL + SIDE_FRONT) / 2;
-const BALC_W = INNER_W;
+/** Losa un poco más ancha que las medianeras, como en los renders. */
+const BALC_W = W + 0.055;
 const BALC_START = FRONT_Z;
 const BALC_Z = BALC_START + CANTILEVER / 2;
-const RAIL_Z = SIDE_FRONT - 0.014;
+const RAIL_Z = BALC_START + CANTILEVER - 0.014;
 const RAIL_H = 0.1;
-const PICK_Z = (BACK_Z + WALL + FIT + SIDE_FRONT) / 2;
+const PICK_Z = (BACK_Z + WALL + FIT + BALC_START + CANTILEVER) / 2;
 const LOBBY_W = INNER_W * 0.34;
 const GARAGE_W = INNER_W * 0.62;
-const BAYS = 4;
+/** Paño ciego izquierdo ~1/4 del frente; el resto es vidrio. */
+const SOLID_W = INNER_W * 0.25;
+const GLASS_W = INNER_W - SOLID_W;
+const BAYS = 3;
 
 const COL = {
   stucco: SITE.stucco,
@@ -268,12 +272,14 @@ export function ArchitecturalMassing({
      paredes: se lee como bug, no como arquitectura. */
   const geo = useMemo(() => {
     const glassH = FLOOR_H - SLAB_T - 0.012;
-    const bayW = INNER_W / BAYS;
+    const bayW = GLASS_W / BAYS;
     return {
       floorPlate: new THREE.BoxGeometry(INNER_W, SLAB_T, PLATE_D),
       balcony: new THREE.BoxGeometry(BALC_W, SLAB_T, CANTILEVER),
       fasciaStrip: new THREE.BoxGeometry(BALC_W + 0.004, SLAB_T + 0.004, 0.016),
+      aptWall: new THREE.BoxGeometry(SOLID_W - 0.01, glassH, 0.045),
       glassBay: new THREE.BoxGeometry(bayW - 0.016, glassH, 0.01),
+      rearGlass: new THREE.BoxGeometry(bayW - 0.02, glassH * 0.78, 0.01),
       mullion: new THREE.BoxGeometry(0.011, glassH, 0.014),
       rear: new THREE.BoxGeometry(W, 1, WALL),
       side: new THREE.BoxGeometry(WALL, 1, SIDE_D),
@@ -285,7 +291,7 @@ export function ArchitecturalMassing({
       lobbyGlass: new THREE.BoxGeometry(LOBBY_W - 0.02, GROUND_H * 0.86, 0.01),
       slat: new THREE.BoxGeometry(0.013, GROUND_H * 0.86, 0.02),
       spot: new THREE.CylinderGeometry(0.016, 0.016, 0.006, 10),
-      planter: new THREE.BoxGeometry(BALC_W * 0.92, 0.07, 0.14),
+      planter: new THREE.BoxGeometry(BALC_W * 0.72, 0.07, 0.14),
       bulkhead: new THREE.BoxGeometry(INNER_W * 0.9, FLOOR_H * 0.72, CORE_D * 0.42),
       ribbon: new THREE.BoxGeometry(INNER_W * 0.55, FLOOR_H * 0.16, 0.012),
       punch: new THREE.BoxGeometry(0.11, 0.11, 0.04),
@@ -297,7 +303,7 @@ export function ArchitecturalMassing({
   }, [geo]);
 
   const floorY = (level: number, ex: number) =>
-    GROUND_H + (level - 0.5) * FLOOR_H + ex * 0.3 * (level - 1);
+    GROUND_H + (level - 1) * FLOOR_H + ex * 0.3 * (level - 1);
 
   const towerH = towerFloors * FLOOR_H;
   const stackH = GROUND_H + towerH;
@@ -343,15 +349,17 @@ export function ArchitecturalMassing({
   const stackY = stackH / 2;
   const lobbyX = -INNER_W / 2 + LOBBY_W / 2;
   const garageX = INNER_W / 2 - GARAGE_W / 2;
-  const bayW = INNER_W / BAYS;
+  const glassStart = -INNER_W / 2 + SOLID_W;
+  const bayW = GLASS_W / BAYS;
   const bayXs = Array.from(
     { length: BAYS },
-    (_, i) => -INNER_W / 2 + bayW * (i + 0.5),
+    (_, i) => glassStart + bayW * (i + 0.5),
   );
   const mullionXs = Array.from(
     { length: BAYS - 1 },
-    (_, i) => -INNER_W / 2 + bayW * (i + 1),
+    (_, i) => glassStart + bayW * (i + 1),
   );
+  const aptWallX = -INNER_W / 2 + SOLID_W / 2;
   const slatCount = 15;
   const spotXs = [-INNER_W * 0.28, 0, INNER_W * 0.28];
 
@@ -446,34 +454,6 @@ export function ArchitecturalMassing({
             />
           );
         })}
-        <mesh
-          position={[0, GROUND_H, PLATE_Z]}
-          castShadow
-          receiveShadow
-          geometry={geo.floorPlate}
-          material={mat.fascia}
-        />
-        <mesh
-          position={[0, GROUND_H, BALC_Z]}
-          castShadow
-          receiveShadow
-          geometry={geo.balcony}
-          material={mat.fascia}
-        />
-        <mesh
-          geometry={geo.fasciaStrip}
-          position={[0, GROUND_H, RAIL_Z]}
-          material={mat.fasciaDark}
-        />
-        {!lite &&
-          spotXs.map((x) => (
-            <mesh
-              key={`gspot-${x}`}
-              geometry={geo.spot}
-              position={[x, GROUND_H - SLAB_T / 2 - 0.004, BALC_Z]}
-              material={mat.spot}
-            />
-          ))}
       </group>
 
       {Array.from({ length: towerFloors }, (_, i) => {
@@ -554,6 +534,14 @@ export function ArchitecturalMassing({
               material={mat.fasciaDark}
             />
 
+            <mesh
+              geometry={geo.aptWall}
+              position={[aptWallX, glassY, FRONT_Z + 0.008]}
+              castShadow={!lite}
+              receiveShadow
+              material={mat.stucco}
+            />
+
             {bayXs.map((x) => (
               <mesh
                 key={`g-${x}`}
@@ -571,6 +559,14 @@ export function ArchitecturalMassing({
                   material={mat.mullion}
                 />
               ))}
+            {bayXs.map((x) => (
+              <mesh
+                key={`rg-${x}`}
+                geometry={geo.rearGlass}
+                position={[x, glassY, BACK_Z - 0.006]}
+                material={glassMat}
+              />
+            ))}
 
             <mesh
               geometry={geo.kick}

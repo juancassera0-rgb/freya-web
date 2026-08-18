@@ -13,7 +13,7 @@ export const SITE_DIMS = {
   FLOOR_H: 0.42,
   /** PB más alto que un piso tipo. */
   GROUND_H: 0.74,
-  /** Balcón profundo, inscrito entre las medianeras. */
+  /** Balcón profundo; la losa vuela un poco más que las medianeras. */
   CANTILEVER: 0.48,
   /** Losa leída como 25–30 cm. */
   SLAB_T: 0.078,

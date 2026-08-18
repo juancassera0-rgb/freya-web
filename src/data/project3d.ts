@@ -168,7 +168,7 @@ export const sow3d: Project3DConfig = {
       id: "amenities",
       label: "Amenities",
       kind: "amenity",
-      position: [0.55, 1.55, 0.72],
+      position: [0.55, 1.34, 0.72],
       body: "Espacios comunes del proyecto — detalle oficial pendiente.",
     },
     {

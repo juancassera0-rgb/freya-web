@@ -14,6 +14,7 @@ import { ProceduralEnvironment } from "./ProceduralEnvironment";
 import { BRAND, MOOD, SITE } from "./sceneTokens";
 import { OrbitWheelCapture } from "./OrbitWheelCapture";
 import { getConcreteFloorMap, getConcreteFloorNormalMap } from "./proceduralTextures";
+import { SITE_DIMS } from "./siteDims";
 
 export type SalesStage = "building" | "floor" | "unit";
 
@@ -171,7 +172,8 @@ function DirectedCamera({
 
     if (stage === "floor" && focusFloor != null) {
       // Debe coincidir con floorY() de ArchitecturalMassing
-      const y = 0.62 + (focusFloor - 0.5) * 0.4;
+      const y =
+        SITE_DIMS.GROUND_H + (focusFloor - 1) * SITE_DIMS.FLOOR_H;
       targetLook.current.y = y;
       targetPos.current.y = y + 1.0;
     }
