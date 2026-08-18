@@ -86,28 +86,23 @@ const GLASS_OPEN_H = OPENING_H - BAND_H;
 const APT_WALL_D = 0.07;
 const BAND_D = 0.048;
 /**
- * Ático: la fachada se recede y la terraza ocupa ese vacío.
- * No es un piso tipo con el balcón acortado.
+ * Piso 8: tres paredes + terraza al aire (sin techo).
+ * Piso 9: terraza recedida sobre el techo de ese volumen.
  */
-const PH_BALC_SCALE = 0.7;
-const PH_GLASS_Z = FRONT_Z - 0.1;
-const PH_LEFT_W = INNER_W * 0.24;
-const PH_GLASS_W = INNER_W - PH_LEFT_W - 0.08;
-const PH_GLASS_H = OPENING_H * 0.52;
+const PH_BALC_SCALE = 0.75;
+const PH_GLASS_Z = FRONT_Z - 0.08;
+const PH_LEFT_W = INNER_W * 0.22;
+const PH_RIGHT_W = 0.1;
+const PH_GLASS_W = INNER_W - PH_LEFT_W - PH_RIGHT_W;
+const PH_GLASS_H = OPENING_H * 0.7;
 const PH_PARAPET_H = 0.058;
-const PH_CANOPY_D = 0.44;
-const PH_CANOPY_T = 0.05;
-/** Frente del volumen alto: detrás del vidrio, a mitad de la profundidad. */
-const PH_STEP_Z = PH_GLASS_Z - 0.18;
-const PH_TALL_Z0 = BACK_Z + WALL;
-const PH_TALL_EXTRA = FLOOR_H * 0.95;
-/** Pared izquierda: tramo alto más corto — la terraza envuelve el frente-izq. */
-const PH_LEFT_TALL_D = PH_STEP_Z - PH_TALL_Z0;
-const PH_LEFT_TALL_Z = (PH_STEP_Z + PH_TALL_Z0) / 2;
-/** Pared derecha: un rectángulo alto, más largo, el marco en 3/4. */
-const PH_RIGHT_TALL_Z1 = PH_GLASS_Z + 0.1;
-const PH_RIGHT_TALL_D = PH_RIGHT_TALL_Z1 - PH_TALL_Z0;
-const PH_RIGHT_TALL_Z = (PH_RIGHT_TALL_Z1 + PH_TALL_Z0) / 2;
+const PH_ROOM_H = FLOOR_H - SLAB_T;
+/** Paredes laterales del 8, hacia la terraza — no hasta el borde. */
+const PH_LEFT_SIDE_D = 0.26;
+const PH_RIGHT_SIDE_D = 0.36;
+const PH_ROOF_Z0 = BACK_Z + WALL;
+const PH_ROOF_D = PH_GLASS_Z - PH_ROOF_Z0;
+const PH_ROOF_Z = (PH_GLASS_Z + PH_ROOF_Z0) / 2;
 
 const COL = {
   stucco: SITE.stucco,
@@ -345,16 +340,16 @@ export function ArchitecturalMassing({
       spot: new THREE.CylinderGeometry(0.016, 0.016, 0.006, 10),
       phGlass: new THREE.BoxGeometry(PH_GLASS_W, PH_GLASS_H, 0.014),
       phGlassVoid: new THREE.BoxGeometry(PH_GLASS_W - 0.02, PH_GLASS_H - 0.01, 0.04),
-      phLintel: new THREE.BoxGeometry(PH_GLASS_W + 0.06, 0.078, 0.12),
+      phLintel: new THREE.BoxGeometry(PH_GLASS_W + 0.04, 0.07, WALL),
       phParapet: new THREE.BoxGeometry(BALC_W * 0.985, PH_PARAPET_H, 0.024),
       phRail: new THREE.BoxGeometry(BALC_W * 0.97, RAIL_H * 1.05, 0.006),
-      phCanopy: new THREE.BoxGeometry(PH_GLASS_W + 0.08, PH_CANOPY_T, PH_CANOPY_D),
-      phRightJamb: new THREE.BoxGeometry(0.07, OPENING_H * 0.88, 0.3),
-      phLeftTall: new THREE.BoxGeometry(WALL, PH_TALL_EXTRA, PH_LEFT_TALL_D),
-      phLeftRiser: new THREE.BoxGeometry(WALL * 1.15, PH_TALL_EXTRA, WALL),
-      phRightTall: new THREE.BoxGeometry(WALL * 1.22, PH_TALL_EXTRA, PH_RIGHT_TALL_D),
-      phRear: new THREE.BoxGeometry(W, PH_TALL_EXTRA, WALL),
-      phRoof: new THREE.BoxGeometry(W - 0.02, 0.058, PH_LEFT_TALL_D),
+      phMainLeft: new THREE.BoxGeometry(PH_LEFT_W, PH_ROOM_H, WALL),
+      phMainRight: new THREE.BoxGeometry(PH_RIGHT_W, PH_ROOM_H, WALL),
+      phLeftSide: new THREE.BoxGeometry(WALL, PH_ROOM_H, PH_LEFT_SIDE_D),
+      phRightSide: new THREE.BoxGeometry(WALL * 1.15, PH_ROOM_H, PH_RIGHT_SIDE_D),
+      phRoofDeck: new THREE.BoxGeometry(INNER_W, SLAB_T, PH_ROOF_D),
+      phRoofParapet: new THREE.BoxGeometry(INNER_W * 0.94, PH_PARAPET_H, 0.04),
+      phRoofRail: new THREE.BoxGeometry(INNER_W * 0.92, RAIL_H * 0.9, 0.006),
       phPlanter: new THREE.BoxGeometry(0.3, 0.046, 0.1),
       phShrub: new THREE.BoxGeometry(0.13, 0.11, 0.09),
     };
@@ -511,7 +506,10 @@ export function ArchitecturalMassing({
 
       {Array.from({ length: towerFloors }, (_, i) => {
         const level = i + 1;
-        const setback = level === towerFloors;
+        const roofTerrace = level === towerFloors;
+        const terraceRoom =
+          towerFloors > 1 && level === towerFloors - 1;
+        const typical = !roofTerrace && !terraceRoom;
         const active = highlightedFloor === level;
         const isSelectedFloor = selectedUnit?.floor === level;
         const isHovered = hoveredFloor === level;
@@ -531,15 +529,14 @@ export function ArchitecturalMassing({
         const wallY = SLAB_T / 2 + OPENING_H / 2;
         const glassY = SLAB_T / 2 + GLASS_OPEN_H / 2;
         const bandY = SLAB_T / 2 + GLASS_OPEN_H + BAND_H / 2;
-        const balcScaleZ = setback ? PH_BALC_SCALE : 1;
-        const balcZ = setback
+        const balcScaleZ = terraceRoom ? PH_BALC_SCALE : 1;
+        const balcZ = terraceRoom
           ? BALC_START + (BALC_D * balcScaleZ) / 2
           : BALC_Z;
-        const railZ = setback
+        const railZ = terraceRoom
           ? BALC_START + BALC_D * balcScaleZ - 0.014
           : RAIL_Z;
-        /** Vidrio y paño ciego a ~mitad de la profundidad actual del balcón. */
-        const facadeZ = setback
+        const facadeZ = terraceRoom
           ? PH_GLASS_Z
           : BALC_START + BALC_D * 0.5;
         const pentGlassMat = dimmed
@@ -548,10 +545,8 @@ export function ArchitecturalMassing({
             ? mat.glassEmph
             : mat.glassPent;
         const pentGlassX = -INNER_W / 2 + PH_LEFT_W + PH_GLASS_W / 2;
-        const pentGlassY = SLAB_T / 2 + 0.018 + PH_GLASS_H / 2;
-        const pentCanopyY =
-          SLAB_T / 2 + 0.018 + PH_GLASS_H + PH_CANOPY_T / 2;
-        const pentCanopyZ = PH_GLASS_Z + PH_CANOPY_D / 2 - 0.03;
+        const pentGlassY = SLAB_T / 2 + 0.02 + PH_GLASS_H / 2;
+        const pentRoomY = SLAB_T / 2 + PH_ROOM_H / 2;
         const typicalSoffitZ = (BALC_START + BALC_D * 0.5 + RAIL_Z) / 2;
 
         return (
@@ -584,22 +579,34 @@ export function ArchitecturalMassing({
               />
             ) : null}
 
-            <mesh
-              geometry={geo.floorPlate}
-              position={[0, 0, PLATE_Z]}
-              receiveShadow
-              material={slabMat}
-            />
-            <mesh
-              geometry={geo.balcony}
-              position={[0, 0, balcZ]}
-              scale={[1, 1, balcScaleZ]}
-              castShadow={!lite}
-              receiveShadow
-              material={slabMat}
-            />
+            {!roofTerrace && (
+              <mesh
+                geometry={geo.floorPlate}
+                position={[0, 0, PLATE_Z]}
+                receiveShadow
+                material={slabMat}
+              />
+            )}
+            {(typical || terraceRoom) && (
+              <mesh
+                geometry={geo.balcony}
+                position={[0, 0, balcZ]}
+                scale={[1, 1, balcScaleZ]}
+                castShadow={!lite}
+                receiveShadow
+                material={slabMat}
+              />
+            )}
+            {roofTerrace && (
+              <mesh
+                geometry={geo.phRoofDeck}
+                position={[0, 0, PH_ROOF_Z]}
+                receiveShadow
+                material={slabMat}
+              />
+            )}
 
-            {!setback && (
+            {typical && (
               <>
                 <mesh
                   geometry={geo.fasciaStrip}
@@ -692,24 +699,21 @@ export function ArchitecturalMassing({
               </>
             )}
 
-            {bayXs.map((x) => (
+            {!roofTerrace &&
+              bayXs.map((x) => (
               <mesh
                 key={`rg-${x}`}
                 geometry={geo.rearGlass}
                 position={[x, glassY, BACK_Z - 0.006]}
-                material={setback ? pentGlassMat : glassMat}
+                material={terraceRoom ? pentGlassMat : glassMat}
               />
             ))}
 
-            {setback && (
+            {terraceRoom && (
               <>
                 <mesh
                   geometry={geo.phParapet}
-                  position={[
-                    0,
-                    SLAB_T / 2 + PH_PARAPET_H / 2,
-                    railZ,
-                  ]}
+                  position={[0, SLAB_T / 2 + PH_PARAPET_H / 2, railZ]}
                   castShadow={!lite}
                   receiveShadow
                   material={mat.stucco}
@@ -724,6 +728,39 @@ export function ArchitecturalMassing({
                   material={railMat}
                 />
                 <mesh
+                  geometry={geo.phMainLeft}
+                  position={[
+                    -INNER_W / 2 + PH_LEFT_W / 2,
+                    pentRoomY,
+                    PH_GLASS_Z,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phMainRight}
+                  position={[
+                    INNER_W / 2 - PH_RIGHT_W / 2,
+                    pentRoomY,
+                    PH_GLASS_Z,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phLintel}
+                  position={[
+                    pentGlassX,
+                    pentGlassY + PH_GLASS_H / 2 + 0.035,
+                    PH_GLASS_Z,
+                  ]}
+                  castShadow={!lite}
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
                   geometry={geo.phGlassVoid}
                   position={[pentGlassX, pentGlassY, PH_GLASS_Z - 0.03]}
                   material={mat.interior}
@@ -734,98 +771,27 @@ export function ArchitecturalMassing({
                   material={pentGlassMat}
                 />
                 <mesh
-                  geometry={geo.phRightJamb}
+                  geometry={geo.phLeftSide}
                   position={[
-                    INNER_W / 2 - 0.03,
-                    SLAB_T / 2 + OPENING_H * 0.46,
-                    PH_GLASS_Z + 0.1,
-                  ]}
-                  castShadow={!lite}
-                  receiveShadow
-                  material={mat.stucco}
-                />
-                <mesh
-                  geometry={geo.phLintel}
-                  position={[pentGlassX, pentCanopyY + 0.008, PH_GLASS_Z + 0.06]}
-                  castShadow={!lite}
-                  receiveShadow
-                  material={mat.stucco}
-                />
-                <mesh
-                  geometry={geo.phCanopy}
-                  position={[pentGlassX, pentCanopyY, pentCanopyZ]}
-                  castShadow={!lite}
-                  receiveShadow
-                  material={mat.stucco}
-                />
-                <mesh
-                  geometry={geo.phLeftTall}
-                  position={[
-                    -W / 2 + WALL / 2,
-                    FLOOR_H + PH_TALL_EXTRA / 2,
-                    PH_LEFT_TALL_Z,
+                    -INNER_W / 2 + WALL / 2,
+                    pentRoomY,
+                    PH_GLASS_Z + PH_LEFT_SIDE_D / 2,
                   ]}
                   castShadow
                   receiveShadow
                   material={mat.stucco}
                 />
                 <mesh
-                  geometry={geo.phLeftRiser}
+                  geometry={geo.phRightSide}
                   position={[
-                    -W / 2 + WALL / 2,
-                    FLOOR_H + PH_TALL_EXTRA / 2,
-                    PH_STEP_Z,
+                    INNER_W / 2 - WALL / 2,
+                    pentRoomY,
+                    PH_GLASS_Z + PH_RIGHT_SIDE_D / 2,
                   ]}
                   castShadow
                   receiveShadow
                   material={mat.stucco}
                 />
-                <mesh
-                  geometry={geo.phRear}
-                  position={[
-                    0,
-                    FLOOR_H + PH_TALL_EXTRA / 2,
-                    BACK_Z + WALL / 2,
-                  ]}
-                  castShadow
-                  receiveShadow
-                  material={mat.stucco}
-                />
-                <mesh
-                  geometry={geo.phRightTall}
-                  position={[
-                    W / 2 - WALL / 2,
-                    FLOOR_H + PH_TALL_EXTRA / 2,
-                    PH_RIGHT_TALL_Z,
-                  ]}
-                  castShadow
-                  receiveShadow
-                  material={mat.stucco}
-                />
-                <mesh
-                  geometry={geo.phRoof}
-                  position={[
-                    0,
-                    FLOOR_H + PH_TALL_EXTRA - 0.02,
-                    PH_LEFT_TALL_Z,
-                  ]}
-                  castShadow
-                  receiveShadow
-                  material={mat.stucco}
-                />
-                {!lite &&
-                  [-PH_GLASS_W * 0.28, 0, PH_GLASS_W * 0.28].map((x) => (
-                    <mesh
-                      key={`ph-spot-${x}`}
-                      geometry={geo.spot}
-                      position={[
-                        pentGlassX + x,
-                        pentCanopyY - PH_CANOPY_T / 2 - 0.004,
-                        pentCanopyZ + 0.04,
-                      ]}
-                      material={mat.spot}
-                    />
-                  ))}
                 {!lite && (
                   <>
                     <mesh
@@ -857,24 +823,62 @@ export function ArchitecturalMassing({
                       scale={[0.9, 0.75, 0.85]}
                       material={mat.foliageMid}
                     />
+                  </>
+                )}
+              </>
+            )}
+
+            {roofTerrace && (
+              <>
+                <mesh
+                  geometry={geo.phRoofParapet}
+                  position={[
+                    0,
+                    SLAB_T / 2 + PH_PARAPET_H / 2,
+                    PH_GLASS_Z,
+                  ]}
+                  castShadow={!lite}
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phRoofRail}
+                  position={[
+                    0,
+                    SLAB_T / 2 + PH_PARAPET_H + RAIL_H * 0.38,
+                    PH_GLASS_Z + 0.008,
+                  ]}
+                  material={railMat}
+                />
+                {!lite && (
+                  <>
                     <mesh
-                      geometry={geo.phShrub}
+                      geometry={geo.phPlanter}
                       position={[
-                        -BALC_W * 0.38,
-                        SLAB_T / 2 + PH_PARAPET_H + 0.055,
-                        railZ + 0.012,
+                        -INNER_W * 0.18,
+                        SLAB_T / 2 + PH_PARAPET_H + 0.028,
+                        PH_GLASS_Z - 0.06,
                       ]}
-                      scale={[0.72, 0.5, 0.58]}
-                      material={mat.foliageSun}
+                      material={mat.stucco}
                     />
                     <mesh
                       geometry={geo.phShrub}
                       position={[
-                        -BALC_W * 0.12,
-                        SLAB_T / 2 + PH_PARAPET_H + 0.07,
-                        railZ - 0.07,
+                        -INNER_W * 0.22,
+                        SLAB_T / 2 + PH_PARAPET_H + 0.09,
+                        PH_GLASS_Z - 0.05,
                       ]}
-                      scale={[0.65, 0.55, 0.7]}
+                      material={mat.foliageSun}
+                      castShadow
+                    />
+                    <mesh
+                      geometry={geo.phShrub}
+                      position={[
+                        -INNER_W * 0.08,
+                        SLAB_T / 2 + PH_PARAPET_H + 0.07,
+                        PH_GLASS_Z - 0.06,
+                      ]}
+                      scale={[0.75, 0.55, 0.8]}
                       material={mat.green}
                     />
                   </>
@@ -883,6 +887,7 @@ export function ArchitecturalMassing({
             )}
 
             {!lite &&
+              !roofTerrace &&
               spotXs.map((x) => (
                 <mesh
                   key={`spot-${x}`}
@@ -890,7 +895,9 @@ export function ArchitecturalMassing({
                   position={[
                     x,
                     -SLAB_T / 2 - 0.004,
-                    setback ? typicalSoffitZ : (facadeZ + railZ) / 2,
+                    terraceRoom
+                      ? typicalSoffitZ
+                      : (facadeZ + railZ) / 2,
                   ]}
                   material={mat.spot}
                 />
