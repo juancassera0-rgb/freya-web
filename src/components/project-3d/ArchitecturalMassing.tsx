@@ -88,7 +88,7 @@ const BAND_D = 0.048;
 /**
  * Pisos 1–8: balcón tipo.
  * Piso 9: penthouse con las paredes del edificio y techo sobre el volumen.
- * La terraza queda al aire: sin muros ni techo adelante.
+ * Terraza al aire adelante; L izquierda (medianera + retorno) sobre la losa.
  */
 const PH_BALC_SCALE = 0.75;
 const PH_GLASS_Z = FRONT_Z - 0.08;
@@ -102,6 +102,11 @@ const PH_BACK = BACK_Z + WALL;
 const PH_ROOM_D = PH_GLASS_Z - PH_BACK;
 const PH_ROOM_Z = (PH_GLASS_Z + PH_BACK) / 2;
 const PH_ROOF_T = SLAB_T;
+/** Frente de la L izquierda: sobre la terraza, sin tapar el pretil. */
+const PH_TERRACE_FRONT = BALC_START + BALC_D * PH_BALC_SCALE - 0.02;
+const PH_LEFT_SIDE_D = PH_TERRACE_FRONT - PH_BACK;
+const PH_LEFT_SIDE_Z = (PH_TERRACE_FRONT + PH_BACK) / 2;
+const PH_LEFT_RETURN_W = PH_LEFT_W * 0.42;
 
 const COL = {
   stucco: SITE.stucco,
@@ -344,8 +349,9 @@ export function ArchitecturalMassing({
       phRail: new THREE.BoxGeometry(BALC_W * 0.97, RAIL_H * 1.05, 0.006),
       phMainLeft: new THREE.BoxGeometry(PH_LEFT_W, PH_ROOM_H, WALL),
       phMainRight: new THREE.BoxGeometry(PH_RIGHT_W, PH_ROOM_H, WALL),
-      phLeftSide: new THREE.BoxGeometry(WALL, PH_ROOM_H, PH_ROOM_D),
+      phLeftSide: new THREE.BoxGeometry(WALL, PH_ROOM_H, PH_LEFT_SIDE_D),
       phRightSide: new THREE.BoxGeometry(WALL, PH_ROOM_H, PH_ROOM_D),
+      phLeftReturn: new THREE.BoxGeometry(PH_LEFT_RETURN_W, PH_ROOM_H, WALL),
       phRear: new THREE.BoxGeometry(W, PH_ROOM_H, WALL),
       phRoof: new THREE.BoxGeometry(W, PH_ROOF_T, PH_ROOM_D),
       phPlanter: new THREE.BoxGeometry(0.3, 0.046, 0.1),
@@ -758,7 +764,18 @@ export function ArchitecturalMassing({
                   position={[
                     -W / 2 + WALL / 2,
                     pentRoomY,
-                    PH_ROOM_Z,
+                    PH_LEFT_SIDE_Z,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phLeftReturn}
+                  position={[
+                    -W / 2 + WALL + PH_LEFT_RETURN_W / 2,
+                    pentRoomY,
+                    PH_GLASS_Z + WALL / 2,
                   ]}
                   castShadow
                   receiveShadow
