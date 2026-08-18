@@ -51,22 +51,23 @@ const { W, FLOOR_H, GROUND_H, SLAB_T, CANTILEVER, WALL, FRONT_Z, BACK_Z } =
    -------------------------------------------------------------------------- */
 const CORE_D = FRONT_Z - BACK_Z;
 const CORE_Z = (FRONT_Z + BACK_Z) / 2;
-/** Holgura losa/muro: caras coplanares se pelean en el z-buffer y
-    la losa “perfora” el borde visto desde afuera. */
-const FIT = 0.02;
+const FIT = 0.016;
 const INNER_W = W - WALL * 2 - FIT * 2;
 const PLATE_D = CORE_D - WALL - FIT * 2;
 const PLATE_Z = (BACK_Z + WALL + FIT + FRONT_Z - FIT) / 2;
-/** Medianera: arranca después del contrafrente, no se superpone en la esquina. */
-const SIDE_D = CORE_D - WALL;
-const SIDE_Z = (BACK_Z + WALL + FRONT_Z) / 2;
-/** Voladizo: un pelo adelante del plano de fachada, nunca a ras del muro. */
-const BALC_W = W - FIT * 2;
-const BALC_START = FRONT_Z + 0.012;
+/** Medianeras hasta el canto del balcón: el marco blanco de los renders. */
+const SIDE_FRONT = FRONT_Z + CANTILEVER;
+const SIDE_D = SIDE_FRONT - (BACK_Z + WALL);
+const SIDE_Z = (BACK_Z + WALL + SIDE_FRONT) / 2;
+const BALC_W = INNER_W;
+const BALC_START = FRONT_Z;
 const BALC_Z = BALC_START + CANTILEVER / 2;
-const RAIL_Z = BALC_START + CANTILEVER - 0.018;
-const RAIL_H = 0.11;
-const PICK_Z = (BACK_Z + WALL + FIT + BALC_START + CANTILEVER) / 2;
+const RAIL_Z = SIDE_FRONT - 0.014;
+const RAIL_H = 0.1;
+const PICK_Z = (BACK_Z + WALL + FIT + SIDE_FRONT) / 2;
+const LOBBY_W = INNER_W * 0.34;
+const GARAGE_W = INNER_W * 0.62;
+const BAYS = 4;
 
 const COL = {
   stucco: SITE.stucco,
@@ -81,6 +82,9 @@ const COL = {
   accent: BRAND.camo,
   interior: SITE.interior,
   interiorLit: SITE.interiorLit,
+  fasciaDark: SITE.fasciaDark,
+  wood: SITE.wood,
+  soffit: SITE.soffit,
 };
 
 export function ArchitecturalMassing({
@@ -207,11 +211,11 @@ export function ArchitecturalMassing({
       interior: make(COL.interior, 0.97, { envMapIntensity: 0.05 }),
       interiorLit: make(COL.interiorLit, 0.92, { envMapIntensity: 0.12 }),
 
-      glassBase: glass(COL.glass, 0.52, 0.08),
-      glassEmph: glass(COL.glassLit, 0.62, 0.05),
-      glassDim: glass(COL.glass, 0.18, 0.08),
+      glassBase: glass(COL.glass, 0.38, 0.06),
+      glassEmph: glass(COL.glassLit, 0.5, 0.04),
+      glassDim: glass(COL.glass, 0.14, 0.06),
 
-      slabBase: concrete(COL.slabFascia, 0.72, {
+      slabBase: concrete(COL.soffit, 0.86, {
         polygonOffset: true,
         polygonOffsetFactor: 1,
         polygonOffsetUnits: 1,
@@ -219,14 +223,42 @@ export function ArchitecturalMassing({
       slabEmph: make(COL.accent, 0.7),
       slabDim: make(COL.slabFascia, 0.78, { transparent: true, opacity: 0.3 }),
 
-      railBase: glass(COL.rail, 0.38, 0.08),
-      railDim: glass(COL.rail, 0.1, 0.08),
+      railBase: glass(COL.rail, 0.28, 0.04),
+      railDim: glass(COL.rail, 0.08, 0.04),
+
+      fasciaDark: make(COL.fasciaDark, 0.42, { metalness: 0.35, envMapIntensity: 0.45 }),
+      slat: make(COL.mullion, 0.48, { metalness: 0.55, envMapIntensity: 0.4 }),
+      wood: make(COL.wood, 0.82, { envMapIntensity: 0.15 }),
+      spot: new THREE.MeshBasicMaterial({ color: "#f3ead4" }),
+      address: new THREE.MeshBasicMaterial({
+        map: (() => {
+          const c = document.createElement("canvas");
+          c.width = 256;
+          c.height = 96;
+          const ctx = c.getContext("2d")!;
+          ctx.clearRect(0, 0, 256, 96);
+          ctx.fillStyle = "#f4f1ea";
+          ctx.font = "700 58px Helvetica, Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("620", 128, 50);
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          return tex;
+        })(),
+        transparent: true,
+        depthWrite: false,
+      }),
     };
   }, []);
 
   // Libera materiales al desmontar — evita fugas entre navegaciones
   useEffect(() => {
-    return () => Object.values(mat).forEach((m) => m.dispose());
+    return () => {
+      const addr = mat.address.map;
+      Object.values(mat).forEach((m) => m.dispose());
+      addr?.dispose();
+    };
   }, [mat]);
 
   /* ---------- Geometrías ----------
@@ -235,25 +267,28 @@ export function ArchitecturalMassing({
      Si la losa es un solo bloque del tamaño del lote, perfora las
      paredes: se lee como bug, no como arquitectura. */
   const geo = useMemo(() => {
-    const glassH = FLOOR_H - SLAB_T - 0.016;
-    const bayW = (INNER_W - 0.06) / 3;
+    const glassH = FLOOR_H - SLAB_T - 0.012;
+    const bayW = INNER_W / BAYS;
     return {
       floorPlate: new THREE.BoxGeometry(INNER_W, SLAB_T, PLATE_D),
       balcony: new THREE.BoxGeometry(BALC_W, SLAB_T, CANTILEVER),
-      column: new THREE.BoxGeometry(0.048, glassH, 0.048),
-      glassBay: new THREE.BoxGeometry(bayW - 0.012, glassH, 0.011),
-      mullion: new THREE.BoxGeometry(0.014, glassH, 0.018),
+      fasciaStrip: new THREE.BoxGeometry(BALC_W + 0.004, SLAB_T + 0.004, 0.016),
+      glassBay: new THREE.BoxGeometry(bayW - 0.016, glassH, 0.01),
+      mullion: new THREE.BoxGeometry(0.011, glassH, 0.014),
       rear: new THREE.BoxGeometry(W, 1, WALL),
       side: new THREE.BoxGeometry(WALL, 1, SIDE_D),
       interiorRear: new THREE.BoxGeometry(INNER_W - 0.02, 1, 0.018),
       interiorSide: new THREE.BoxGeometry(0.018, 1, SIDE_D - FIT * 2),
-      rail: new THREE.BoxGeometry(BALC_W - 0.08, RAIL_H, 0.008),
-      railSide: new THREE.BoxGeometry(0.008, RAIL_H, CANTILEVER - 0.02),
-      railPost: new THREE.BoxGeometry(0.011, RAIL_H, 0.011),
-      railCap: new THREE.BoxGeometry(BALC_W - 0.06, 0.007, 0.013),
-      railCapSide: new THREE.BoxGeometry(0.013, 0.007, CANTILEVER - 0.01),
+      rail: new THREE.BoxGeometry(BALC_W - 0.05, RAIL_H, 0.007),
+      kick: new THREE.BoxGeometry(BALC_W - 0.05, 0.01, 0.012),
       pick: new THREE.BoxGeometry(INNER_W, FLOOR_H * 0.95, PLATE_D + CANTILEVER),
-      lobbyGlass: new THREE.BoxGeometry(INNER_W - 0.08, GROUND_H * 0.84, 0.012),
+      lobbyGlass: new THREE.BoxGeometry(LOBBY_W - 0.02, GROUND_H * 0.86, 0.01),
+      slat: new THREE.BoxGeometry(0.013, GROUND_H * 0.86, 0.02),
+      spot: new THREE.CylinderGeometry(0.016, 0.016, 0.006, 10),
+      planter: new THREE.BoxGeometry(BALC_W * 0.92, 0.07, 0.14),
+      bulkhead: new THREE.BoxGeometry(INNER_W * 0.9, FLOOR_H * 0.72, CORE_D * 0.42),
+      ribbon: new THREE.BoxGeometry(INNER_W * 0.55, FLOOR_H * 0.16, 0.012),
+      punch: new THREE.BoxGeometry(0.11, 0.11, 0.04),
     };
   }, []);
 
@@ -265,6 +300,7 @@ export function ArchitecturalMassing({
     GROUND_H + (level - 0.5) * FLOOR_H + ex * 0.3 * (level - 1);
 
   const towerH = towerFloors * FLOOR_H;
+  const stackH = GROUND_H + towerH;
   const totalH = GROUND_H + floors * FLOOR_H;
 
   /* ---------- Animación interna: sin setState por frame ---------- */
@@ -304,12 +340,23 @@ export function ArchitecturalMassing({
   });
 
   const envelopeY = totalH / 2;
+  const stackY = stackH / 2;
+  const lobbyX = -INNER_W / 2 + LOBBY_W / 2;
+  const garageX = INNER_W / 2 - GARAGE_W / 2;
+  const bayW = INNER_W / BAYS;
+  const bayXs = Array.from(
+    { length: BAYS },
+    (_, i) => -INNER_W / 2 + bayW * (i + 0.5),
+  );
+  const mullionXs = Array.from(
+    { length: BAYS - 1 },
+    (_, i) => -INNER_W / 2 + bayW * (i + 1),
+  );
+  const slatCount = 15;
+  const spotXs = [-INNER_W * 0.28, 0, INNER_W * 0.28];
 
   return (
     <group ref={group}>
-      {/* Prisma cerrado: contrafrente + medianeras + piso + techo.
-          Mismo material que el resto del edificio — si la medianera es
-          otro gris, se lee como una placa suelta (el error del render). */}
       <mesh
         geometry={geo.rear}
         position={[0, envelopeY, BACK_Z + WALL / 2]}
@@ -318,6 +365,7 @@ export function ArchitecturalMassing({
         receiveShadow
         material={mat.stucco}
       />
+      {/* Medianera izquierda: hoja continua hasta el coronamiento */}
       <mesh
         geometry={geo.side}
         position={[-W / 2 + WALL / 2, envelopeY, SIDE_Z]}
@@ -326,10 +374,11 @@ export function ArchitecturalMassing({
         receiveShadow
         material={mat.stucco}
       />
+      {/* Medianera derecha: hasta el último piso tipo; el step va en el ático */}
       <mesh
         geometry={geo.side}
-        position={[W / 2 - WALL / 2, envelopeY, SIDE_Z]}
-        scale={[1, totalH, 1]}
+        position={[W / 2 - WALL / 2, stackY, SIDE_Z]}
+        scale={[1, stackH, 1]}
         castShadow
         receiveShadow
         material={mat.stucco}
@@ -348,8 +397,8 @@ export function ArchitecturalMassing({
       />
       <mesh
         geometry={geo.interiorSide}
-        position={[W / 2 - WALL - FIT, envelopeY, SIDE_Z]}
-        scale={[1, totalH - SLAB_T * 2, 1]}
+        position={[W / 2 - WALL - FIT, stackY, SIDE_Z]}
+        scale={[1, stackH - SLAB_T * 2, 1]}
         material={mat.interior}
       />
       <mesh
@@ -358,36 +407,45 @@ export function ArchitecturalMassing({
         receiveShadow
         material={mat.fascia}
       />
-      <mesh
-        geometry={geo.floorPlate}
-        position={[0, totalH - SLAB_T / 2 - 0.01, PLATE_Z]}
-        receiveShadow
-        material={mat.fascia}
-      />
 
-      {/* PB: el mismo prisma, frente de vidrio retranqueado */}
+      {/* PB: acceso 620 a la izquierda, rejas de cochera a la derecha */}
       <group>
-        {[-0.28, 0.28].map((f) => (
-          <mesh
-            key={`gc-${f}`}
-            position={[f * W, GROUND_H / 2, FRONT_Z]}
-            castShadow
-            material={mat.ground}
-          >
-            <boxGeometry args={[0.055, GROUND_H, 0.055]} />
-          </mesh>
-        ))}
         <mesh
-          position={[0, GROUND_H * 0.5, FRONT_Z - 0.08]}
-          material={mat.interiorLit}
+          position={[-INNER_W * 0.28, GROUND_H * 0.5, FRONT_Z - 0.1]}
+          material={mat.wood}
         >
-          <planeGeometry args={[W - WALL * 2 - 0.12, GROUND_H * 0.72]} />
+          <planeGeometry args={[LOBBY_W * 0.72, GROUND_H * 0.7]} />
         </mesh>
         <mesh
-          position={[0, GROUND_H * 0.5, FRONT_Z]}
+          position={[garageX, GROUND_H * 0.5, FRONT_Z - 0.12]}
+          material={mat.interior}
+        >
+          <planeGeometry args={[GARAGE_W * 0.9, GROUND_H * 0.7]} />
+        </mesh>
+        <mesh
+          position={[lobbyX, GROUND_H * 0.5, FRONT_Z + 0.002]}
           geometry={geo.lobbyGlass}
           material={mat.glassBase}
         />
+        <mesh
+          position={[lobbyX, GROUND_H * 0.72, FRONT_Z + 0.01]}
+          material={mat.address}
+        >
+          <planeGeometry args={[0.28, 0.1]} />
+        </mesh>
+        {Array.from({ length: slatCount }, (_, i) => {
+          const x =
+            garageX - GARAGE_W / 2 + 0.04 + (i + 0.5) * ((GARAGE_W - 0.08) / slatCount);
+          return (
+            <mesh
+              key={`slat-${i}`}
+              geometry={geo.slat}
+              position={[x, GROUND_H * 0.5, FRONT_Z + 0.004]}
+              material={mat.slat}
+              castShadow={!lite}
+            />
+          );
+        })}
         <mesh
           position={[0, GROUND_H, PLATE_Z]}
           castShadow
@@ -402,10 +460,25 @@ export function ArchitecturalMassing({
           geometry={geo.balcony}
           material={mat.fascia}
         />
+        <mesh
+          geometry={geo.fasciaStrip}
+          position={[0, GROUND_H, RAIL_Z]}
+          material={mat.fasciaDark}
+        />
+        {!lite &&
+          spotXs.map((x) => (
+            <mesh
+              key={`gspot-${x}`}
+              geometry={geo.spot}
+              position={[x, GROUND_H - SLAB_T / 2 - 0.004, BALC_Z]}
+              material={mat.spot}
+            />
+          ))}
       </group>
 
       {Array.from({ length: towerFloors }, (_, i) => {
         const level = i + 1;
+        const setback = level === towerFloors;
         const active = highlightedFloor === level;
         const isSelectedFloor = selectedUnit?.floor === level;
         const isHovered = hoveredFloor === level;
@@ -422,11 +495,13 @@ export function ArchitecturalMassing({
             ? mat.slabEmph
             : mat.slabBase;
         const railMat = dimmed ? mat.railDim : mat.railBase;
-        const glassH = FLOOR_H - SLAB_T - 0.016;
+        const glassH = FLOOR_H - SLAB_T - 0.012;
         const glassY = SLAB_T / 2 + glassH / 2;
-        const inner = W / 2 - WALL - 0.02;
-        const cols = [-inner, -inner / 3, inner / 3, inner];
-        const bays = [-inner * 0.66, 0, inner * 0.66];
+        const balcScaleZ = setback ? 0.42 : 1;
+        const balcZ = setback
+          ? BALC_START + (CANTILEVER * balcScaleZ) / 2
+          : BALC_Z;
+        const railZ = setback ? BALC_START + CANTILEVER * balcScaleZ - 0.014 : RAIL_Z;
 
         return (
           <group
@@ -466,134 +541,121 @@ export function ArchitecturalMassing({
             />
             <mesh
               geometry={geo.balcony}
-              position={[0, 0, BALC_Z]}
+              position={[0, 0, balcZ]}
+              scale={[1, 1, balcScaleZ]}
               castShadow={!lite}
               receiveShadow
               material={slabMat}
             />
+            <mesh
+              geometry={geo.fasciaStrip}
+              position={[0, 0, railZ]}
+              scale={[1, 1, setback ? 0.8 : 1]}
+              material={mat.fasciaDark}
+            />
 
-            {cols.map((x) => (
-              <mesh
-                key={`c-${x}`}
-                geometry={geo.column}
-                position={[x, glassY, FRONT_Z - 0.01]}
-                castShadow={!lite}
-                material={mat.ground}
-              />
-            ))}
-
-            {bays.map((x) => (
+            {bayXs.map((x) => (
               <mesh
                 key={`g-${x}`}
                 geometry={geo.glassBay}
-                position={[x, glassY, FRONT_Z - 0.006]}
+                position={[x, glassY, FRONT_Z + 0.004]}
                 material={glassMat}
               />
             ))}
             {!lite &&
-              cols.slice(1, 3).map((x) => (
+              mullionXs.map((x) => (
                 <mesh
                   key={`m-${x}`}
                   geometry={geo.mullion}
-                  position={[x, glassY, FRONT_Z]}
+                  position={[x, glassY, FRONT_Z + 0.01]}
                   material={mat.mullion}
                 />
               ))}
 
             <mesh
+              geometry={geo.kick}
+              position={[0, SLAB_T / 2 + 0.006, railZ]}
+              material={mat.fasciaDark}
+            />
+            <mesh
               geometry={geo.rail}
-              position={[0, RAIL_H / 2 + SLAB_T / 2, RAIL_Z]}
+              position={[0, RAIL_H / 2 + SLAB_T / 2 + 0.01, railZ]}
               material={railMat}
             />
             <mesh
-              geometry={geo.railCap}
-              position={[0, RAIL_H + SLAB_T / 2, RAIL_Z]}
+              geometry={geo.kick}
+              position={[0, RAIL_H + SLAB_T / 2 + 0.014, railZ]}
               material={mat.railCap}
+              scale={[1, 0.55, 0.7]}
             />
-            {[-1, 1].map((side) => (
-              <group key={`rs-${side}`}>
-                <mesh
-                  geometry={geo.railSide}
-                  position={[
-                    side * (BALC_W / 2 - 0.01),
-                    RAIL_H / 2 + SLAB_T / 2,
-                    BALC_Z,
-                  ]}
-                  material={railMat}
-                />
-                <mesh
-                  geometry={geo.railCapSide}
-                  position={[
-                    side * (BALC_W / 2 - 0.01),
-                    RAIL_H + SLAB_T / 2,
-                    BALC_Z,
-                  ]}
-                  material={mat.railCap}
-                />
-              </group>
-            ))}
+
             {!lite &&
-              cols.map((x) => (
+              spotXs.map((x) => (
                 <mesh
-                  key={`p-${x}`}
-                  geometry={geo.railPost}
-                  position={[x, RAIL_H / 2 + SLAB_T / 2, RAIL_Z]}
-                  material={mat.railCap}
+                  key={`spot-${x}`}
+                  geometry={geo.spot}
+                  position={[x, -SLAB_T / 2 - 0.004, balcZ]}
+                  material={mat.spot}
                 />
               ))}
+
+            {setback && !lite && (
+              <mesh
+                geometry={geo.planter}
+                position={[0, 0.05, railZ - 0.06]}
+                material={mat.green}
+                castShadow
+              />
+            )}
           </group>
         );
       })}
 
       <group ref={crownRef} position={[0, GROUND_H + towerH, 0]}>
         <mesh
-          position={[0, FLOOR_H * 0.4, CORE_Z - 0.08]}
+          geometry={geo.bulkhead}
+          position={[0, FLOOR_H * 0.42, CORE_Z - 0.12]}
+          castShadow
+          receiveShadow
+          material={mat.stucco}
+        />
+        <mesh
+          geometry={geo.ribbon}
+          position={[0, FLOOR_H * 0.28, FRONT_Z - 0.18]}
+          material={mat.glassBase}
+        />
+        <mesh
+          geometry={geo.punch}
+          position={[-INNER_W * 0.32, FLOOR_H * 0.58, FRONT_Z - 0.16]}
+          material={mat.interior}
+        />
+        {/* Escalón de la medianera derecha hacia el fondo */}
+        <mesh
+          position={[W / 2 - WALL / 2, FLOOR_H * 0.28, SIDE_FRONT - 0.18]}
           castShadow
           receiveShadow
           material={mat.stucco}
         >
-          <boxGeometry args={[W - WALL * 2 - 0.08, FLOOR_H * 0.78, CORE_D * 0.55]} />
+          <boxGeometry args={[WALL, FLOOR_H * 0.55, 0.36]} />
         </mesh>
         <mesh
-          position={[0, FLOOR_H * 0.38, FRONT_Z - 0.12]}
-          material={mat.glassBase}
-        >
-          <boxGeometry args={[W * 0.48, FLOOR_H * 0.55, 0.012]} />
-        </mesh>
-        <mesh
-          position={[0, SLAB_T / 2, PLATE_Z]}
-          receiveShadow
-          geometry={geo.floorPlate}
-          material={mat.fascia}
-        />
-        <mesh
-          position={[0, SLAB_T / 2, BALC_Z]}
+          position={[W / 2 - WALL / 2, FLOOR_H * 0.16, CORE_Z]}
           castShadow
           receiveShadow
-          geometry={geo.balcony}
-          material={mat.fascia}
-        />
-        {!lite &&
-          [-0.2, 0.16].map((f) => (
-            <mesh
-              key={f}
-              position={[f * W, 0.055, RAIL_Z - 0.08]}
-              castShadow
-              material={mat.green}
-            >
-              <boxGeometry args={[W * 0.2, 0.08, 0.12]} />
-            </mesh>
-          ))}
+          material={mat.stucco}
+        >
+          <boxGeometry args={[WALL, FLOOR_H * 0.32, CORE_D * 0.45]} />
+        </mesh>
       </group>
 
       <mesh
         ref={parapetRef}
-        position={[-W * 0.1, GROUND_H + towerH + FLOOR_H + 0.1, BACK_Z + 0.28]}
+        position={[-INNER_W * 0.18, GROUND_H + towerH + FLOOR_H * 0.78, CORE_Z - 0.22]}
         castShadow
         receiveShadow
         material={mat.stucco}
       >
-        <boxGeometry args={[W * 0.36, 0.2, 0.28]} />
+        <boxGeometry args={[INNER_W * 0.42, 0.16, 0.22]} />
       </mesh>
     </group>
   );

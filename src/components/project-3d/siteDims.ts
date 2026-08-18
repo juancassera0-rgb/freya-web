@@ -7,19 +7,20 @@
  * fondo de manzana — no una torre aislada en un parque.
  */
 export const SITE_DIMS = {
-  W: 1.62,
+  /** Frente angosto — silueta ~1:3.4 como los renders de Beauchef 620. */
+  W: 1.36,
   D: 2.45,
-  FLOOR_H: 0.4,
-  GROUND_H: 0.62,
-  /** Voladizo a CALLE únicamente — ~1.1 m. Nunca atraviesa medianera. */
-  CANTILEVER: 0.38,
-  SLAB_T: 0.052,
-  /** Espesor de medianera / contrafrente. */
-  WALL: 0.07,
-  /** Plano de vidrio a calle. */
-  FRONT_Z: 0.28,
-  /** Plano ciego de contrafrente — el prisma cierra acá. */
-  BACK_Z: -0.95,
+  FLOOR_H: 0.42,
+  /** PB más alto que un piso tipo. */
+  GROUND_H: 0.74,
+  /** Balcón profundo, inscrito entre las medianeras. */
+  CANTILEVER: 0.48,
+  /** Losa leída como 25–30 cm. */
+  SLAB_T: 0.078,
+  /** Medianeras-marco: gruesas, estructurales. */
+  WALL: 0.11,
+  FRONT_Z: 0.2,
+  BACK_Z: -0.92,
 } as const;
 
 export function towerTotalH(floors: number): number {

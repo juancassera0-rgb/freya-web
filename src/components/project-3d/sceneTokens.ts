@@ -111,18 +111,20 @@ export const SITE = {
      revoque cálido (no paper-white), losa más arena, vidrio oscuro,
      interior profundo. El contraste entre estas capas es lo que hace
      que el volumen se lea construido. */
-  stucco: mix(OFF_WHITE, CAMO, 0.32),
-  slabFascia: mix(CAMO, OFF_WHITE, 0.38),
-  party: mix(OFF_WHITE, OFF_BLACK, 0.28),
-  soffit: mix(CAMO, OFF_BLACK, 0.34),
-  glass: mix(OFF_BLACK, CAMO, 0.2),
-  glassLit: mix(CAMO, OFF_WHITE, 0.3),
-  mullion: mix(OFF_BLACK, CAMO, 0.08),
-  rail: mix(OFF_BLACK, CAMO, 0.14),
-  railCap: mix(OFF_BLACK, CAMO, 0.06),
-  groundFloor: mix(OFF_BLACK, OFF_WHITE, 0.4),
+  stucco: mix(OFF_WHITE, CAMO, 0.18),
+  slabFascia: mix(CAMO, OFF_WHITE, 0.48),
+  party: mix(OFF_WHITE, OFF_BLACK, 0.22),
+  soffit: mix(OFF_WHITE, CAMO, 0.12),
+  glass: mix(OFF_BLACK, CAMO, 0.28),
+  glassLit: mix(CAMO, OFF_WHITE, 0.42),
+  mullion: mix(OFF_BLACK, CAMO, 0.05),
+  rail: mix(OFF_BLACK, CAMO, 0.22),
+  railCap: mix(OFF_BLACK, CAMO, 0.04),
+  groundFloor: mix(OFF_BLACK, OFF_WHITE, 0.38),
   interior: mix(OFF_BLACK, CAMO, 0.1),
-  interiorLit: mix(CAMO, OFF_WHITE, 0.32),
+  interiorLit: mix(CAMO, OFF_WHITE, 0.38),
+  fasciaDark: mix(OFF_BLACK, CAMO, 0.12),
+  wood: mix(CAMO, OFF_WHITE, 0.28),
 } as const;
 
 /**
