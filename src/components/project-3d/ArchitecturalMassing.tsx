@@ -293,8 +293,8 @@ export function ArchitecturalMassing({
       side: new THREE.BoxGeometry(WALL, 1, SIDE_D),
       interiorRear: new THREE.BoxGeometry(INNER_W - 0.02, 1, 0.018),
       interiorSide: new THREE.BoxGeometry(0.018, 1, SIDE_D - FIT * 2),
-      rail: new THREE.BoxGeometry(BALC_W - 0.05, RAIL_H, 0.007),
-      kick: new THREE.BoxGeometry(BALC_W - 0.05, 0.01, 0.012),
+      rail: new THREE.BoxGeometry(BALC_W - 0.012, RAIL_H, 0.007),
+      kick: new THREE.BoxGeometry(BALC_W - 0.012, 0.01, 0.012),
       sideRail: new THREE.BoxGeometry(0.007, RAIL_H, SIDE_RAIL_D),
       sideKick: new THREE.BoxGeometry(0.012, 0.01, SIDE_RAIL_D),
       pick: new THREE.BoxGeometry(INNER_W, FLOOR_H * 0.95, PLATE_D + BALC_D),
@@ -371,7 +371,7 @@ export function ArchitecturalMassing({
   );
   const aptWallX = -INNER_W / 2 + SOLID_W / 2;
   const slatCount = 15;
-  const spotXs = [-INNER_W * 0.28, 0, INNER_W * 0.28];
+  const spotXs = [-BALC_W * 0.25, 0, BALC_W * 0.25];
 
   return (
     <group ref={group}>
@@ -617,6 +617,16 @@ export function ArchitecturalMassing({
                     ]}
                     material={railMat}
                   />
+                  <mesh
+                    geometry={geo.sideKick}
+                    position={[
+                      side * RAIL_SIDE_X,
+                      RAIL_H + SLAB_T / 2 + 0.014,
+                      SIDE_RAIL_Z,
+                    ]}
+                    material={mat.railCap}
+                    scale={[0.7, 0.55, 1]}
+                  />
                 </group>
               ))}
 
@@ -625,7 +635,7 @@ export function ArchitecturalMassing({
                 <mesh
                   key={`spot-${x}`}
                   geometry={geo.spot}
-                  position={[x, -SLAB_T / 2 - 0.004, balcZ]}
+                  position={[x, -SLAB_T / 2 - 0.004, (facadeZ + railZ) / 2]}
                   material={mat.spot}
                 />
               ))}
