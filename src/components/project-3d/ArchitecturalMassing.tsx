@@ -125,9 +125,7 @@ export function ArchitecturalMassing({
   const extractNow = useRef(0);
   const explodeNow = useRef(explode);
 
-  const regularFloors = config.schematicFloors;
-  /** Nueve pisos tipo + el ático recedido. */
-  const towerFloors = Math.max(2, regularFloors + 1);
+  const towerFloors = Math.max(1, config.schematicFloors);
 
   const selectedUnit = selectedUnitId
     ? config.units.find((u) => u.id === selectedUnitId)
