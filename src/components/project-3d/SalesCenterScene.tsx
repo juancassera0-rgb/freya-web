@@ -11,6 +11,7 @@ import { SkyDome } from "./SkyDome";
 import { SiteContext } from "./SiteContext";
 import { ProceduralEnvironment } from "./ProceduralEnvironment";
 import { BRAND, MOOD, SITE } from "./sceneTokens";
+import { getConcreteFloorMap, getConcreteFloorNormalMap } from "./proceduralTextures";
 
 export type SalesStage = "building" | "floor" | "unit";
 
@@ -376,9 +377,20 @@ export function SalesCenterScene({
       {!isUnit && <SiteContext mood="day" detail={tier} />}
 
       {isUnit && (
+        /* Piso del sales center — antes un gris de vereda sin variación
+           que dominaba todo el encuadre (superficie enorme, un solo tono
+           plano bajo luz difusa se lee muy oscura y sin vida). El mismo
+           hormigón procedural que el edificio, a escala de paño grande. */
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow={!low}>
           <planeGeometry args={[28, 28]} />
-          <meshStandardMaterial color={SITE.sidewalk} roughness={1} />
+          <meshStandardMaterial
+            color="#efece4"
+            roughness={0.88}
+            map={getConcreteFloorMap()}
+            normalMap={getConcreteFloorNormalMap()}
+            normalScale={new THREE.Vector2(0.5, 0.5)}
+            envMapIntensity={0.35}
+          />
         </mesh>
       )}
 

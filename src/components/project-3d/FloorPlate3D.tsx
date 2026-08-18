@@ -7,6 +7,7 @@ import * as THREE from "three";
 import type { PlanRoom, UnitPlan } from "@/data/planGeometry";
 import { RoomFurniture } from "./RoomFurniture";
 import { BRAND, SITE } from "./sceneTokens";
+import { getConcreteMap, getConcreteNormalMap } from "./proceduralTextures";
 import styles from "./FloorPlate3D.module.css";
 
 type Props = {
@@ -125,12 +126,24 @@ export function FloorPlate3D({
       floors[kind] = m(color, 0.9, { transparent: true, opacity: 0.75 });
     }
 
+    /* Mismo tratamiento de hormigón que el edificio — criterio visual
+       unificado entre escalas: el muro de una unidad tiene que leerse
+       como el mismo material que la medianera de afuera, no otro. */
+    const concreteMap = getConcreteMap();
+    const concreteNormalMap = getConcreteNormalMap();
+    const concreteOpts = {
+      map: concreteMap,
+      normalMap: concreteNormalMap,
+      normalScale: new THREE.Vector2(0.6, 0.6),
+      envMapIntensity: 0.35,
+    };
+
     return {
       floors,
       floorFallback: m(SITE.sidewalk, 0.9, { transparent: true, opacity: 0.75 }),
-      base: m("#e8e4dc", 0.85),
-      wall: m(SITE.stucco, 0.8),
-      wallEmph: m(SITE.soffit, 0.8),
+      base: m("#e8e4dc", 0.85, concreteOpts),
+      wall: m(SITE.stucco, 0.8, concreteOpts),
+      wallEmph: m(SITE.soffit, 0.8, concreteOpts),
       rail: m(SITE.rail, 0.45, {
         metalness: 0.25,
         transparent: true,

@@ -5,6 +5,11 @@ import { useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import type { Project3DConfig } from "@/data/project3d";
 import { BRAND, SITE } from "./sceneTokens";
+import {
+  getConcreteMap,
+  getConcreteNormalMap,
+  getConcreteRoughnessMap,
+} from "./proceduralTextures";
 
 type Props = {
   config: Project3DConfig;
@@ -109,24 +114,55 @@ export function ArchitecturalMassing({
       opts: Partial<THREE.MeshStandardMaterialParameters> = {},
     ) => new THREE.MeshStandardMaterial({ color, roughness, ...opts });
 
+    /* Hormigón visto — variación de paño procedural + envMap contenido.
+       Tres correcciones sobre la versión anterior, todas apuntando al
+       mismo síntoma ("se ve de plástico"):
+       1. `map` module el tono base ~±20% en paneles anchos — el color es
+          lo que el ojo lee primero, mucho antes que el brillo, así que es
+          la pieza que realmente rompe la uniformidad en una captura.
+       2. `roughnessMap` (mismo patrón, sin espacio de color) evita que la
+          superficie responda de forma pareja a la luz especular.
+       3. envMapIntensity por default es 1: un mate real no refleja el
+          entorno a intensidad plena. Bajarlo a 0.35 saca el lustre que no
+          le corresponde a una superficie rugosa. */
+    const concreteMap = getConcreteMap();
+    const concreteRoughnessMap = getConcreteRoughnessMap();
+    const concreteNormalMap = getConcreteNormalMap();
+    const concrete = (color: string, roughness: number) =>
+      make(color, roughness, {
+        map: concreteMap,
+        roughnessMap: concreteRoughnessMap,
+        normalMap: concreteNormalMap,
+        normalScale: new THREE.Vector2(0.7, 0.7),
+        envMapIntensity: 0.35,
+      });
+
     const glass = (
       color: string,
       opacity: number,
       metalness: number,
     ) =>
-      make(color, 0.04, {
+      /* MeshPhysicalMaterial en vez de Standard: clearcoat agrega una
+         segunda capa especular fina — el laminado real de un vidrio
+         arquitectónico — sin pagar el costo de transmission (que exige
+         un pase de render extra por paño transparente). */
+      new THREE.MeshPhysicalMaterial({
+        color,
+        roughness: 0.04,
         metalness,
         envMapIntensity: 1.45,
         transparent: true,
         opacity,
+        clearcoat: 0.5,
+        clearcoatRoughness: 0.15,
       });
 
     return {
-      stucco: make(COL.stucco, 0.92),
-      fascia: make(COL.slabFascia, 0.78),
-      soffit: make(COL.soffit, 0.85),
+      stucco: concrete(COL.stucco, 0.92),
+      fascia: concrete(COL.slabFascia, 0.78),
+      soffit: concrete(COL.soffit, 0.85),
       mullion: make(COL.mullion, 0.45, { metalness: 0.35 }),
-      ground: make(COL.ground, 0.9),
+      ground: concrete(COL.ground, 0.9),
       green: make(COL.green, 1),
       accent: make(COL.accent, 0.6),
 
@@ -142,7 +178,7 @@ export function ArchitecturalMassing({
       glassDim: glass(COL.glass, 0.14, 0.86),
 
       /* --- Variantes de losa por estado --- */
-      slabBase: make(COL.slabFascia, 0.78),
+      slabBase: concrete(COL.slabFascia, 0.78),
       slabEmph: make(COL.accent, 0.7),
       slabDim: make(COL.slabFascia, 0.78, { transparent: true, opacity: 0.3 }),
 
