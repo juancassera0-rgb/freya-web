@@ -55,23 +55,25 @@ const FIT = 0.016;
 const INNER_W = W - WALL * 2 - FIT * 2;
 const PLATE_D = CORE_D - WALL - FIT * 2;
 const PLATE_Z = (BACK_Z + WALL + FIT + FRONT_Z - FIT) / 2;
-/** Medianeras un poco más cortas que el canto: el balcón vuela un poco más. */
-const SIDE_FRONT = FRONT_Z + CANTILEVER - 0.055;
+/** Medianeras hasta el canto: el balcón queda inscrito, sin volar a los lados. */
+const SIDE_FRONT = FRONT_Z + CANTILEVER;
 const SIDE_D = SIDE_FRONT - (BACK_Z + WALL);
 const SIDE_Z = (BACK_Z + WALL + SIDE_FRONT) / 2;
-/** Losa un poco más ancha que las medianeras, como en los renders. */
-const BALC_W = W + 0.055;
+/** Losa a tope con la cara interior de las medianeras — sin hueco ni overflow. */
+const BALC_W = W - WALL * 2 - 0.008;
 const BALC_START = FRONT_Z;
 const BALC_Z = BALC_START + CANTILEVER / 2;
-const RAIL_Z = BALC_START + CANTILEVER - 0.014;
+const RAIL_Z = SIDE_FRONT - 0.014;
 const RAIL_H = 0.1;
-const PICK_Z = (BACK_Z + WALL + FIT + BALC_START + CANTILEVER) / 2;
+const PICK_Z = (BACK_Z + WALL + FIT + SIDE_FRONT) / 2;
 const LOBBY_W = INNER_W * 0.34;
 const GARAGE_W = INNER_W * 0.62;
-/** Paño ciego izquierdo ~1/4 del frente; el resto es vidrio. */
-const SOLID_W = INNER_W * 0.25;
+/** Paño ciego izquierdo angosto; el resto es vidrio recedido. */
+const SOLID_W = INNER_W * 0.14;
 const GLASS_W = INNER_W - SOLID_W;
-const BAYS = 3;
+const BAYS = 4;
+/** El paño ciego vuela un poco más que el plano de vidrio. */
+const APT_WALL_D = 0.07;
 
 const COL = {
   stucco: SITE.stucco,
@@ -276,8 +278,8 @@ export function ArchitecturalMassing({
     return {
       floorPlate: new THREE.BoxGeometry(INNER_W, SLAB_T, PLATE_D),
       balcony: new THREE.BoxGeometry(BALC_W, SLAB_T, CANTILEVER),
-      fasciaStrip: new THREE.BoxGeometry(BALC_W + 0.004, SLAB_T + 0.004, 0.016),
-      aptWall: new THREE.BoxGeometry(SOLID_W - 0.01, glassH, 0.045),
+      fasciaStrip: new THREE.BoxGeometry(BALC_W, SLAB_T + 0.004, 0.016),
+      aptWall: new THREE.BoxGeometry(SOLID_W - 0.012, glassH, APT_WALL_D),
       glassBay: new THREE.BoxGeometry(bayW - 0.016, glassH, 0.01),
       rearGlass: new THREE.BoxGeometry(bayW - 0.02, glassH * 0.78, 0.01),
       mullion: new THREE.BoxGeometry(0.011, glassH, 0.014),
@@ -536,7 +538,7 @@ export function ArchitecturalMassing({
 
             <mesh
               geometry={geo.aptWall}
-              position={[aptWallX, glassY, FRONT_Z + 0.008]}
+              position={[aptWallX, glassY, FRONT_Z + APT_WALL_D / 2]}
               castShadow={!lite}
               receiveShadow
               material={mat.stucco}
@@ -546,7 +548,7 @@ export function ArchitecturalMassing({
               <mesh
                 key={`g-${x}`}
                 geometry={geo.glassBay}
-                position={[x, glassY, FRONT_Z + 0.004]}
+                position={[x, glassY, FRONT_Z + 0.003]}
                 material={glassMat}
               />
             ))}
