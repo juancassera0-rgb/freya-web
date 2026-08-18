@@ -125,8 +125,9 @@ export function ArchitecturalMassing({
   const extractNow = useRef(0);
   const explodeNow = useRef(explode);
 
-  const floors = config.schematicFloors;
-  const towerFloors = Math.max(1, floors - 1);
+  const regularFloors = config.schematicFloors;
+  /** Nueve pisos tipo + el ático recedido. */
+  const towerFloors = Math.max(2, regularFloors + 1);
 
   const selectedUnit = selectedUnitId
     ? config.units.find((u) => u.id === selectedUnitId)
@@ -322,7 +323,7 @@ export function ArchitecturalMassing({
 
   const towerH = towerFloors * FLOOR_H;
   const stackH = GROUND_H + towerH;
-  const totalH = GROUND_H + floors * FLOOR_H;
+  const totalH = GROUND_H + towerH + FLOOR_H;
 
   /* ---------- Animación interna: sin setState por frame ---------- */
   useFrame((state, delta) => {
