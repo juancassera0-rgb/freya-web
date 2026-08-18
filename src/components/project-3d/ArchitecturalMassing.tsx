@@ -100,10 +100,14 @@ const PH_CANOPY_T = 0.05;
 /** Frente del volumen alto: detrás del vidrio, a mitad de la profundidad. */
 const PH_STEP_Z = PH_GLASS_Z - 0.18;
 const PH_TALL_Z0 = BACK_Z + WALL;
-const PH_TALL_D = PH_STEP_Z - PH_TALL_Z0;
-const PH_TALL_Z = (PH_STEP_Z + PH_TALL_Z0) / 2;
-/** Extra de altura del cajón posterior, sobre el piso tipo. */
 const PH_TALL_EXTRA = FLOOR_H * 0.95;
+/** Pared izquierda: tramo alto más corto — la terraza envuelve el frente-izq. */
+const PH_LEFT_TALL_D = PH_STEP_Z - PH_TALL_Z0;
+const PH_LEFT_TALL_Z = (PH_STEP_Z + PH_TALL_Z0) / 2;
+/** Pared derecha: un rectángulo alto, más largo, el marco en 3/4. */
+const PH_RIGHT_TALL_Z1 = PH_GLASS_Z + 0.1;
+const PH_RIGHT_TALL_D = PH_RIGHT_TALL_Z1 - PH_TALL_Z0;
+const PH_RIGHT_TALL_Z = (PH_RIGHT_TALL_Z1 + PH_TALL_Z0) / 2;
 
 const COL = {
   stucco: SITE.stucco,
@@ -346,9 +350,11 @@ export function ArchitecturalMassing({
       phRail: new THREE.BoxGeometry(BALC_W * 0.97, RAIL_H * 1.05, 0.006),
       phCanopy: new THREE.BoxGeometry(PH_GLASS_W + 0.08, PH_CANOPY_T, PH_CANOPY_D),
       phRightJamb: new THREE.BoxGeometry(0.07, OPENING_H * 0.88, 0.3),
-      phSideTall: new THREE.BoxGeometry(WALL, PH_TALL_EXTRA, PH_TALL_D),
-      phStepFace: new THREE.BoxGeometry(INNER_W, PH_TALL_EXTRA, WALL),
-      phRoof: new THREE.BoxGeometry(W - 0.02, 0.058, PH_TALL_D),
+      phLeftTall: new THREE.BoxGeometry(WALL, PH_TALL_EXTRA, PH_LEFT_TALL_D),
+      phLeftRiser: new THREE.BoxGeometry(WALL * 1.15, PH_TALL_EXTRA, WALL),
+      phRightTall: new THREE.BoxGeometry(WALL * 1.22, PH_TALL_EXTRA, PH_RIGHT_TALL_D),
+      phRear: new THREE.BoxGeometry(W, PH_TALL_EXTRA, WALL),
+      phRoof: new THREE.BoxGeometry(W - 0.02, 0.058, PH_LEFT_TALL_D),
       phPlanter: new THREE.BoxGeometry(0.3, 0.046, 0.1),
       phShrub: new THREE.BoxGeometry(0.13, 0.11, 0.09),
     };
@@ -363,7 +369,6 @@ export function ArchitecturalMassing({
 
   const towerH = towerFloors * FLOOR_H;
   const stackH = GROUND_H + towerH;
-  const totalH = GROUND_H + towerH + FLOOR_H;
 
   /* ---------- Animación interna: sin setState por frame ---------- */
   useFrame((state, delta) => {
@@ -393,7 +398,6 @@ export function ArchitecturalMassing({
     }
   });
 
-  const envelopeY = totalH / 2;
   const stackY = stackH / 2;
   const lobbyX = -INNER_W / 2 + LOBBY_W / 2;
   const garageX = INNER_W / 2 - GARAGE_W / 2;
@@ -415,14 +419,15 @@ export function ArchitecturalMassing({
     <group ref={group}>
       <mesh
         geometry={geo.rear}
-        position={[0, envelopeY, BACK_Z + WALL / 2]}
-        scale={[1, totalH, 1]}
+        position={[0, stackY, BACK_Z + WALL / 2]}
+        scale={[1, stackH, 1]}
         castShadow
         receiveShadow
         material={mat.stucco}
       />
-      {/* Medianeras: hasta el último piso. El cajón alto del ático
-          arranca a mitad de profundidad — no una hoja extra hasta el frente. */}
+      {/* Medianeras y contrafrente: hasta el último piso.
+          Las 3 paredes del ático (izq. escalonada, fondo, der. alta)
+          viven en el grupo del piso 9. */}
       <mesh
         geometry={geo.side}
         position={[-W / 2 + WALL / 2, stackY, SIDE_Z]}
@@ -441,8 +446,8 @@ export function ArchitecturalMassing({
       />
       <mesh
         geometry={geo.interiorRear}
-        position={[0, envelopeY, BACK_Z + WALL + 0.012]}
-        scale={[1, totalH - SLAB_T * 2, 1]}
+        position={[0, stackY, BACK_Z + WALL + 0.012]}
+        scale={[1, stackH - SLAB_T * 2, 1]}
         material={mat.interior}
       />
       <mesh
@@ -753,26 +758,45 @@ export function ArchitecturalMassing({
                   receiveShadow
                   material={mat.stucco}
                 />
-                {[-1, 1].map((side) => (
-                  <mesh
-                    key={`ph-side-tall-${side}`}
-                    geometry={geo.phSideTall}
-                    position={[
-                      side * (W / 2 - WALL / 2),
-                      FLOOR_H + PH_TALL_EXTRA / 2,
-                      PH_TALL_Z,
-                    ]}
-                    castShadow
-                    receiveShadow
-                    material={mat.stucco}
-                  />
-                ))}
                 <mesh
-                  geometry={geo.phStepFace}
+                  geometry={geo.phLeftTall}
+                  position={[
+                    -W / 2 + WALL / 2,
+                    FLOOR_H + PH_TALL_EXTRA / 2,
+                    PH_LEFT_TALL_Z,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phLeftRiser}
+                  position={[
+                    -W / 2 + WALL / 2,
+                    FLOOR_H + PH_TALL_EXTRA / 2,
+                    PH_STEP_Z,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phRear}
                   position={[
                     0,
                     FLOOR_H + PH_TALL_EXTRA / 2,
-                    PH_STEP_Z,
+                    BACK_Z + WALL / 2,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phRightTall}
+                  position={[
+                    W / 2 - WALL / 2,
+                    FLOOR_H + PH_TALL_EXTRA / 2,
+                    PH_RIGHT_TALL_Z,
                   ]}
                   castShadow
                   receiveShadow
@@ -783,7 +807,7 @@ export function ArchitecturalMassing({
                   position={[
                     0,
                     FLOOR_H + PH_TALL_EXTRA - 0.02,
-                    PH_TALL_Z,
+                    PH_LEFT_TALL_Z,
                   ]}
                   castShadow
                   receiveShadow
