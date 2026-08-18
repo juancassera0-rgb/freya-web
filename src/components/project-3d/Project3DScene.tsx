@@ -8,7 +8,9 @@ import { AdaptiveQuality, type QualityTier } from "./AdaptiveQuality";
 import { WebGLGuard } from "./WebGLGuard";
 import { SkyDome } from "./SkyDome";
 import { SiteContext } from "./SiteContext";
+import { NeighbourContext } from "./NeighbourContext";
 import { ProceduralEnvironment } from "./ProceduralEnvironment";
+import { PostFX } from "./PostFX";
 import { BRAND, MOOD, SITE, type SceneMood } from "./sceneTokens";
 import { CameraRig } from "./CameraRig";
 import { OrbitControlsSoft } from "./OrbitControlsSoft";
@@ -162,6 +164,8 @@ export function Project3DScene({
 
       {/* Emplazamiento: vereda, cordón, calzada, canteros y arbolado */}
       <SiteContext mood={sceneMood} detail={tier} />
+      {/* Manzana vecina: profundidad urbana detrás del lote */}
+      <NeighbourContext detail={tier} />
 
       {!low && (
         <ContactShadows
@@ -193,6 +197,9 @@ export function Project3DScene({
       <WebGLGuard />
 
       <Suspense fallback={null}>{children}</Suspense>
+
+      {/* Sólo en el hardware que sobra: ver PostFX para el porqué del gate */}
+      {high && !touch && <PostFX />}
     </Canvas>
   );
 }

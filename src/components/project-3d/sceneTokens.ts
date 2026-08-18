@@ -102,6 +102,9 @@ export const SITE = {
   /* --- Contexto construido --- */
   neighbour: mix(OFF_WHITE, OFF_BLACK, 0.13), // vecinos, off-white apagado
   neighbourShade: mix(OFF_WHITE, OFF_BLACK, 0.26), // sus caras en sombra
+  /* Fila más lejana de vecinos: la misma niebla aérea que el arbolado
+     lejano, para que la profundidad se lea continua entre ambas capas. */
+  neighbourFar: mix(new THREE.Color(mix(OFF_WHITE, OFF_BLACK, 0.16)), OFF_WHITE, 0.45),
 
   /* --- El edificio --- */
   stucco: shade(OFF_WHITE, -0.03), // medianeras y parapetos

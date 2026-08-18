@@ -32,6 +32,7 @@ let roughnessTexture: THREE.CanvasTexture | null = null;
 let normalTexture: THREE.CanvasTexture | null = null;
 let floorMapTexture: THREE.CanvasTexture | null = null;
 let floorNormalTexture: THREE.CanvasTexture | null = null;
+let facadeCanvas: HTMLCanvasElement | null = null;
 
 function seededRandom(seed: number) {
   let s = seed;
@@ -221,5 +222,75 @@ export function getConcreteFloorNormalMap(): THREE.CanvasTexture {
   texture.repeat.set(14, 14);
   texture.anisotropy = 8;
   floorNormalTexture = texture;
+  return texture;
+}
+
+/* --------------------------------------------------------------------------
+   FACHADA DE CONTEXTO — grilla de aberturas para el arbolado urbano
+   (edificios vecinos). No busca detalle arquitectónico: busca que la masa
+   de fondo deje de leerse como un bloque sólido y pase a leerse como un
+   edificio habitado, a la distancia y escala en que aparece en cámara.
+
+   Igual que el hormigón: una sola señal de baja frecuencia (la grilla de
+   aberturas) más una variación de brillo por celda — la mayoría apagadas,
+   un puñado "con luz" — es lo que rompe la monotonía sin pagar el costo de
+   una textura de alta resolución ni de assets externos.
+   -------------------------------------------------------------------------- */
+function buildFacadeCanvas(): HTMLCanvasElement {
+  const cols = 8;
+  const rows = 14;
+  const cell = 16;
+  const w = cols * cell;
+  const h = rows * cell;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  const rand = seededRandom(4242);
+
+  // Base: mampostería neutra, apenas más oscura que el hormigón del edificio
+  // principal — así la masa de fondo se retira sin desaparecer.
+  ctx.fillStyle = "#b9b6a9";
+  ctx.fillRect(0, 0, w, h);
+
+  for (let r = 0; r < rows; r += 1) {
+    for (let c = 0; c < cols; c += 1) {
+      // ~14% de aberturas "con luz": suficiente para leerse habitado sin
+      // parecer un edificio de oficinas de noche.
+      const lit = rand() < 0.14;
+      const base = lit ? 214 + rand() * 30 : 96 + rand() * 46;
+      const r8 = lit ? base : base * 0.95;
+      const g8 = lit ? base * 0.96 : base * 0.97;
+      const b8 = lit ? base * 0.8 : base * 1.02;
+      ctx.fillStyle = `rgb(${r8 | 0}, ${g8 | 0}, ${b8 | 0})`;
+      const pad = 2;
+      ctx.fillRect(c * cell + pad, r * cell + pad, cell - pad * 2, cell - pad * 1.3);
+    }
+  }
+
+  return canvas;
+}
+
+function getFacadeCanvas(): HTMLCanvasElement {
+  if (!facadeCanvas) facadeCanvas = buildFacadeCanvas();
+  return facadeCanvas;
+}
+
+/**
+ * Textura de fachada para un edificio vecino puntual — una instancia por
+ * llamada porque cada volumen tiene proporciones distintas y necesita su
+ * propio repeat para que las aberturas no se vean estiradas. El canvas
+ * fuente se comparte; sólo cambia el wrapping por textura, así que el
+ * costo real es una CanvasTexture liviana, no una nueva rasterización.
+ */
+export function createFacadeWindowMap(
+  repeatX: number,
+  repeatY: number,
+): THREE.CanvasTexture {
+  const texture = new THREE.CanvasTexture(getFacadeCanvas());
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(repeatX, repeatY);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
   return texture;
 }

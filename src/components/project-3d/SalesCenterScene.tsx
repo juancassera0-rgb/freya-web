@@ -9,7 +9,9 @@ import { WebGLGuard } from "./WebGLGuard";
 import { AdaptiveQuality, type QualityTier } from "./AdaptiveQuality";
 import { SkyDome } from "./SkyDome";
 import { SiteContext } from "./SiteContext";
+import { NeighbourContext } from "./NeighbourContext";
 import { ProceduralEnvironment } from "./ProceduralEnvironment";
+import { PostFX } from "./PostFX";
 import { BRAND, MOOD, SITE } from "./sceneTokens";
 import { getConcreteFloorMap, getConcreteFloorNormalMap } from "./proceduralTextures";
 
@@ -375,6 +377,7 @@ export function SalesCenterScene({
       <hemisphereLight args={[SITE.skyHorizonDay, SITE.grass, 0.42]} />
 
       {!isUnit && <SiteContext mood="day" detail={tier} />}
+      {!isUnit && <NeighbourContext detail={tier} />}
 
       {isUnit && (
         /* Piso del sales center — antes un gris de vereda sin variación
@@ -455,6 +458,8 @@ export function SalesCenterScene({
       <WebGLGuard onLost={onContextLost} />
 
       <Suspense fallback={null}>{children}</Suspense>
+
+      {high && !touch && <PostFX />}
     </Canvas>
   );
 }
