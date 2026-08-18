@@ -87,7 +87,7 @@ const APT_WALL_D = 0.07;
 const BAND_D = 0.048;
 /**
  * Pisos 1–8: balcón tipo.
- * Piso 9: tres paredes + terraza al aire, sin techo.
+ * Piso 9: penthouse — tres paredes + techo, terraza al aire adelante.
  */
 const PH_BALC_SCALE = 0.75;
 const PH_GLASS_Z = FRONT_Z - 0.08;
@@ -97,9 +97,20 @@ const PH_GLASS_W = INNER_W - PH_LEFT_W - PH_RIGHT_W;
 const PH_GLASS_H = OPENING_H * 0.7;
 const PH_PARAPET_H = 0.058;
 const PH_ROOM_H = FLOOR_H - SLAB_T;
-/** Paredes laterales de la terraza del 9, hacia el frente — no hasta el borde. */
 const PH_LEFT_SIDE_D = 0.26;
 const PH_RIGHT_SIDE_D = 0.36;
+const PH_BACK = BACK_Z + WALL;
+const PH_LEFT_FRONT = PH_GLASS_Z + PH_LEFT_SIDE_D;
+const PH_RIGHT_FRONT = PH_GLASS_Z + PH_RIGHT_SIDE_D;
+const PH_LEFT_WALL_D = PH_LEFT_FRONT - PH_BACK;
+const PH_RIGHT_WALL_D = PH_RIGHT_FRONT - PH_BACK;
+const PH_LEFT_WALL_Z = (PH_LEFT_FRONT + PH_BACK) / 2;
+const PH_RIGHT_WALL_Z = (PH_RIGHT_FRONT + PH_BACK) / 2;
+const PH_ROOF_OVERHANG = 0.12;
+const PH_ROOF_FRONT = PH_GLASS_Z + PH_ROOF_OVERHANG;
+const PH_ROOF_D = PH_ROOF_FRONT - PH_BACK;
+const PH_ROOF_Z = (PH_ROOF_FRONT + PH_BACK) / 2;
+const PH_ROOF_T = SLAB_T;
 
 const COL = {
   stucco: SITE.stucco,
@@ -342,8 +353,10 @@ export function ArchitecturalMassing({
       phRail: new THREE.BoxGeometry(BALC_W * 0.97, RAIL_H * 1.05, 0.006),
       phMainLeft: new THREE.BoxGeometry(PH_LEFT_W, PH_ROOM_H, WALL),
       phMainRight: new THREE.BoxGeometry(PH_RIGHT_W, PH_ROOM_H, WALL),
-      phLeftSide: new THREE.BoxGeometry(WALL, PH_ROOM_H, PH_LEFT_SIDE_D),
-      phRightSide: new THREE.BoxGeometry(WALL * 1.15, PH_ROOM_H, PH_RIGHT_SIDE_D),
+      phLeftSide: new THREE.BoxGeometry(WALL, PH_ROOM_H, PH_LEFT_WALL_D),
+      phRightSide: new THREE.BoxGeometry(WALL * 1.15, PH_ROOM_H, PH_RIGHT_WALL_D),
+      phRear: new THREE.BoxGeometry(INNER_W, PH_ROOM_H, WALL),
+      phRoof: new THREE.BoxGeometry(INNER_W, PH_ROOF_T, PH_ROOF_D),
       phPlanter: new THREE.BoxGeometry(0.3, 0.046, 0.1),
       phShrub: new THREE.BoxGeometry(0.13, 0.11, 0.09),
     };
@@ -356,7 +369,7 @@ export function ArchitecturalMassing({
   const floorY = (level: number, ex: number) =>
     GROUND_H + (level - 1) * FLOOR_H + ex * 0.3 * (level - 1);
 
-  /** Medianeras hasta el piso 8. El 9 es la terraza abierta. */
+  /** Medianeras hasta el piso 8. El penthouse del 9 trae sus propias paredes y techo. */
   const bodyFloors = Math.max(1, towerFloors - 1);
   const bodyH = GROUND_H + bodyFloors * FLOOR_H;
   const bodyY = bodyH / 2;
@@ -754,7 +767,7 @@ export function ArchitecturalMassing({
                   position={[
                     -INNER_W / 2 + WALL / 2,
                     pentRoomY,
-                    PH_GLASS_Z + PH_LEFT_SIDE_D / 2,
+                    PH_LEFT_WALL_Z,
                   ]}
                   castShadow
                   receiveShadow
@@ -765,12 +778,43 @@ export function ArchitecturalMassing({
                   position={[
                     INNER_W / 2 - WALL / 2,
                     pentRoomY,
-                    PH_GLASS_Z + PH_RIGHT_SIDE_D / 2,
+                    PH_RIGHT_WALL_Z,
                   ]}
                   castShadow
                   receiveShadow
                   material={mat.stucco}
                 />
+                <mesh
+                  geometry={geo.phRear}
+                  position={[0, pentRoomY, PH_BACK - WALL / 2]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phRoof}
+                  position={[
+                    0,
+                    SLAB_T / 2 + PH_ROOM_H + PH_ROOF_T / 2,
+                    PH_ROOF_Z,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                {!lite &&
+                  [-PH_GLASS_W * 0.28, 0, PH_GLASS_W * 0.28].map((x) => (
+                    <mesh
+                      key={`ph-spot-${x}`}
+                      geometry={geo.spot}
+                      position={[
+                        pentGlassX + x,
+                        SLAB_T / 2 + PH_ROOM_H - 0.004,
+                        PH_GLASS_Z + PH_ROOF_OVERHANG * 0.45,
+                      ]}
+                      material={mat.spot}
+                    />
+                  ))}
                 {!lite && (
                   <>
                     <mesh
