@@ -4,6 +4,7 @@ import { Instance, Instances } from "@react-three/drei";
 import { useMemo } from "react";
 import * as THREE from "three";
 import { SITE, type SceneMood } from "./sceneTokens";
+import { getAsphaltMap, getAsphaltRoughnessMap } from "./proceduralTextures";
 
 type Props = {
   mood: SceneMood;
@@ -97,7 +98,15 @@ export function SiteContext({ mood, detail }: Props) {
     return {
       sidewalk: m(SITE.sidewalk, 0.95),
       curb: m(SITE.curb, 0.9),
-      asphalt: m(SITE.asphalt, 0.98),
+      /* Grano + parches de bacheo muy sutiles — antes un gris perfectamente
+         uniforme, la superficie más grande y más cercana a cámara de toda
+         la escena. */
+      asphalt: new THREE.MeshStandardMaterial({
+        color: SITE.asphalt,
+        roughness: 0.96,
+        map: getAsphaltMap(),
+        roughnessMap: getAsphaltRoughnessMap(),
+      }),
       grass: m(SITE.grass, 0.92),
       grassLight: m(SITE.grassLight, 0.9),
       trunk: m(SITE.trunk, 0.95),
@@ -130,21 +139,29 @@ export function SiteContext({ mood, detail }: Props) {
     [dusk],
   );
 
-  // Copa: icosaedro achatado — silueta orgánica con muy pocos polígonos
+  /* Copa: icosaedro achatado y ENSANCHADO — no una bocha, un paraguas.
+     Caballito es tipa/jacarandá de vereda: copa ancha y relativamente
+     plana, mucho más parecida a un paraguas achatado que a la esfera
+     genérica que había antes (uno de los motivos por los que los árboles
+     se leían como "prototipo"). Silueta orgánica, sigue en muy pocos
+     polígonos. */
   const canopyGeo = useMemo(() => {
     const g = new THREE.IcosahedronGeometry(0.42, high ? 1 : 0);
-    g.scale(1, 0.78, 1);
+    g.scale(1.22, 0.6, 1.22);
     return g;
   }, [high]);
 
+  /* Tronco con base ensanchada — el cono recto de antes se leía como cono
+     de tránsito. Más taper (base más ancha, remate más fino) da la
+     sensación de raíz/base real sin sumar geometría. */
   const trunkGeo = useMemo(
-    () => new THREE.CylinderGeometry(0.035, 0.05, 0.75, high ? 7 : 5),
+    () => new THREE.CylinderGeometry(0.026, 0.068, 0.75, high ? 8 : 6),
     [high],
   );
 
   const farCanopyGeo = useMemo(() => {
     const g = new THREE.IcosahedronGeometry(1, 0);
-    g.scale(1, 0.72, 1);
+    g.scale(1.15, 0.58, 1.15);
     return g;
   }, []);
 

@@ -151,8 +151,12 @@ export const MOOD = {
     /* Rebote del suelo: cálido y tenue. Ilumina intradoses de balcón y
        bajo-losas, que es donde una escena sin GI se ve muerta. */
     bounce: mix(CAMO, OFF_WHITE, 0.55),
-    keyIntensity: 1.85,
-    ambientIntensity: 0.34,
+    /* Contraste levemente más marcado: sol un poco más presente, relleno
+       ambiental un poco más contenido. El edificio tiene que separarse del
+       entorno con luz, no sólo con color — sobre todo ahora que hay
+       vecinos reales alrededor compitiendo por atención. */
+    keyIntensity: 1.95,
+    ambientIntensity: 0.3,
     exposure: 1.1,
     fogNear: 16,
     fogFar: 46,

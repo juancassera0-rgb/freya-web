@@ -33,6 +33,9 @@ let normalTexture: THREE.CanvasTexture | null = null;
 let floorMapTexture: THREE.CanvasTexture | null = null;
 let floorNormalTexture: THREE.CanvasTexture | null = null;
 let facadeCanvas: HTMLCanvasElement | null = null;
+let asphaltCanvas: HTMLCanvasElement | null = null;
+let asphaltMapTexture: THREE.CanvasTexture | null = null;
+let asphaltRoughnessTexture: THREE.CanvasTexture | null = null;
 
 function seededRandom(seed: number) {
   let s = seed;
@@ -222,6 +225,95 @@ export function getConcreteFloorNormalMap(): THREE.CanvasTexture {
   texture.repeat.set(14, 14);
   texture.anisotropy = 8;
   floorNormalTexture = texture;
+  return texture;
+}
+
+/* --------------------------------------------------------------------------
+   ASFALTO — variación mínima, sólo para que la calzada deje de leerse como
+   un plano de un solo gris perfecto. A diferencia del hormigón, el asfalto
+   real no tiene juntas de panel: la variación es manchas de bacheo/parche y
+   grano muy fino, sin bandas. Amplitud baja a propósito — el brief pide
+   texturas sutiles acá, no un paño protagonista.
+   -------------------------------------------------------------------------- */
+function buildAsphaltHeightField(size: number): Float32Array {
+  const rand = seededRandom(9001);
+  const height = new Float32Array(size * size);
+
+  // Grano fino, sutil
+  for (let i = 0; i < height.length; i += 1) {
+    height[i] = (rand() - 0.5) * 10;
+  }
+
+  // Manchas grandes y muy suaves — parches de bacheo, sin bordes duros
+  for (let i = 0; i < 9; i += 1) {
+    const r = 30 + rand() * 70;
+    const cx = rand() * size;
+    const cy = rand() * size;
+    const amt = (rand() - 0.5) * 14;
+    const r2 = r * r;
+    const x0 = Math.max(0, Math.floor(cx - r));
+    const x1 = Math.min(size, Math.ceil(cx + r));
+    const y0 = Math.max(0, Math.floor(cy - r));
+    const y1 = Math.min(size, Math.ceil(cy + r));
+    for (let y = y0; y < y1; y += 1) {
+      for (let x = x0; x < x1; x += 1) {
+        const dx = x - cx;
+        const dy = y - cy;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > r2) continue;
+        height[y * size + x] += amt * (1 - d2 / r2);
+      }
+    }
+  }
+
+  return height;
+}
+
+function getAsphaltCanvas(): HTMLCanvasElement {
+  if (asphaltCanvas) return asphaltCanvas;
+
+  const size = 192;
+  const height = buildAsphaltHeightField(size);
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+
+  const img = ctx.createImageData(size, size);
+  for (let i = 0; i < height.length; i += 1) {
+    // Base gris oscuro neutro; la variación queda contenida en ±10% para
+    // no competir con la vereda ni con el edificio.
+    const v = THREE.MathUtils.clamp(96 + height[i], 74, 118);
+    img.data[i * 4] = v;
+    img.data[i * 4 + 1] = v;
+    img.data[i * 4 + 2] = v;
+    img.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+
+  asphaltCanvas = canvas;
+  return canvas;
+}
+
+export function getAsphaltMap(): THREE.CanvasTexture {
+  if (asphaltMapTexture) return asphaltMapTexture;
+  const texture = new THREE.CanvasTexture(getAsphaltCanvas());
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(10, 2);
+  texture.anisotropy = 8;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  asphaltMapTexture = texture;
+  return texture;
+}
+
+export function getAsphaltRoughnessMap(): THREE.CanvasTexture {
+  if (asphaltRoughnessTexture) return asphaltRoughnessTexture;
+  const texture = new THREE.CanvasTexture(getAsphaltCanvas());
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(10, 2);
+  texture.anisotropy = 8;
+  texture.colorSpace = THREE.NoColorSpace;
+  asphaltRoughnessTexture = texture;
   return texture;
 }
 

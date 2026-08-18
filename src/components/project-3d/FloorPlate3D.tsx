@@ -120,12 +120,6 @@ export function FloorPlate3D({
       opts: Partial<THREE.MeshStandardMaterialParameters> = {},
     ) => new THREE.MeshStandardMaterial({ color, roughness, ...opts });
 
-    /* Un solado por tipo, translúcido para que se lea el dibujo debajo */
-    const floors: Record<string, THREE.MeshStandardMaterial> = {};
-    for (const [kind, color] of Object.entries(ROOM_COLORS)) {
-      floors[kind] = m(color, 0.9, { transparent: true, opacity: 0.75 });
-    }
-
     /* Mismo tratamiento de hormigón que el edificio — criterio visual
        unificado entre escalas: el muro de una unidad tiene que leerse
        como el mismo material que la medianera de afuera, no otro. */
@@ -138,9 +132,33 @@ export function FloorPlate3D({
       envMapIntensity: 0.35,
     };
 
+    /* Solado por tipo de ambiente, en dos tiers de opacidad — técnico
+       (deja ver el dibujo debajo, para cuando el morph recién empieza a
+       levantar los muros) y sólido (para cuando la unidad ya se lee como
+       volumen). Antes había un solo tier fijo en 0.75: la misma
+       translucidez que ayuda a leer el plano técnico es lo que hacía que
+       la unidad terminada siguiera pareciendo una maqueta técnica en vez
+       de un espacio habitable. Dos variantes por tipo, elegidas por
+       referencia según el morph — mismo criterio que el resto del
+       archivo, sin mutar materiales cuadro a cuadro. */
+    const floorTier = (opacity: number) => {
+      const byKind: Record<string, THREE.MeshStandardMaterial> = {};
+      for (const [kind, color] of Object.entries(ROOM_COLORS)) {
+        byKind[kind] = m(color, 0.9, { transparent: true, opacity });
+      }
+      return {
+        byKind,
+        fallback: m(SITE.sidewalk, 0.9, { transparent: true, opacity }),
+        /* Camo de marca — el mismo color con el que se resalta la losa en
+           el edificio. La continuidad entre escalas es intencional. */
+        emphasised: m(BRAND.camo, 0.9, {
+          transparent: true,
+          opacity: Math.min(0.98, opacity + 0.04),
+        }),
+      };
+    };
+
     return {
-      floors,
-      floorFallback: m(SITE.sidewalk, 0.9, { transparent: true, opacity: 0.75 }),
       base: m("#e8e4dc", 0.85, concreteOpts),
       wall: m(SITE.stucco, 0.8, concreteOpts),
       wallEmph: m(SITE.soffit, 0.8, concreteOpts),
@@ -149,33 +167,24 @@ export function FloorPlate3D({
         transparent: true,
         opacity: 0.55,
       }),
+      floorTechnical: floorTier(0.75),
+      floorSolid: floorTier(0.94),
     };
   }, []);
 
-  /* Solado destacado: Camo de marca — el mismo color con el que se resalta
-     la losa en el edificio. La continuidad entre escalas es intencional. */
-  const emphFloor = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: BRAND.camo,
-        roughness: 0.9,
-        transparent: true,
-        opacity: 0.92,
-      }),
-    [],
-  );
-
   useMemo(() => {
     return () => {
-      Object.values(mat.floors).forEach((m) => m.dispose());
-      mat.floorFallback.dispose();
       mat.base.dispose();
       mat.wall.dispose();
       mat.wallEmph.dispose();
       mat.rail.dispose();
-      emphFloor.dispose();
+      for (const tier of [mat.floorTechnical, mat.floorSolid]) {
+        Object.values(tier.byKind).forEach((m) => m.dispose());
+        tier.fallback.dispose();
+        tier.emphasised.dispose();
+      }
     };
-  }, [mat, emphFloor]);
+  }, [mat]);
 
   /* ---------- Geometrías compartidas ---------- */
   const geo = useMemo(
@@ -230,9 +239,12 @@ export function FloorPlate3D({
         const isBalcony = room.kind === "balcon";
         const hasRender = Boolean(room.renderSrc);
 
+        // Volumen ya levantado más de la mitad: el solado pasa al tier
+        // sólido (ver el comentario en la definición de materiales).
+        const floorTier = morph >= 0.55 ? mat.floorSolid : mat.floorTechnical;
         const floorMat = emphasised
-          ? emphFloor
-          : (mat.floors[room.kind] ?? mat.floorFallback);
+          ? floorTier.emphasised
+          : (floorTier.byKind[room.kind] ?? floorTier.fallback);
         const wallMat = emphasised ? mat.wallEmph : mat.wall;
 
         return (
