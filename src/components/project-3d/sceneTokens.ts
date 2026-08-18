@@ -66,8 +66,8 @@ function vivify(base: THREE.Color, sat: number, light: number): string {
  */
 export const SITE = {
   /* --- Cielo: Off-White como base, apenas entibiado --- */
-  skyTopDay: shade(OFF_WHITE, -0.14), // off-white levemente bajado
-  skyHorizonDay: shade(OFF_WHITE, 0.0), // off-white puro en el horizonte
+  skyTopDay: shade(OFF_WHITE, -0.2),
+  skyHorizonDay: mix(OFF_WHITE, CAMO, 0.08),
   skyTopDusk: mix(OFF_BLACK, CAMO, 0.35), // noche cálida con base camo
   skyHorizonDusk: mix(CAMO, OFF_WHITE, 0.62), // resplandor bajo, arena
 
@@ -106,19 +106,23 @@ export const SITE = {
      lejano, para que la profundidad se lea continua entre ambas capas. */
   neighbourFar: mix(new THREE.Color(mix(OFF_WHITE, OFF_BLACK, 0.16)), OFF_WHITE, 0.45),
 
-  /* --- El edificio --- */
-  stucco: shade(OFF_WHITE, -0.03), // medianeras y parapetos
-  slabFascia: mix(CAMO, OFF_WHITE, 0.66), // frente de losa, arena
-  soffit: mix(CAMO, OFF_WHITE, 0.74), // intradós del balcón
-  glass: mix(OFF_BLACK, CAMO, 0.55), // vidriado
-  glassLit: mix(CAMO, OFF_WHITE, 0.52), // vidrio con luz interior
-  mullion: mix(OFF_BLACK, CAMO, 0.25), // montantes
-  rail: mix(OFF_WHITE, CAMO, 0.16), // baranda de vidrio
-  groundFloor: mix(OFF_BLACK, OFF_WHITE, 0.62), // basamento
-  /* Interior visible detrás del vidriado: sin esto, los paños se leen como
-     espejos opacos y el edificio parece deshabitado. */
-  interior: mix(OFF_BLACK, OFF_WHITE, 0.46),
-  interiorLit: mix(CAMO, OFF_WHITE, 0.7),
+  /* --- El edificio ---
+     Lectura de render arquitectónico, no maqueta blanca:
+     revoque cálido (no paper-white), losa más arena, vidrio oscuro,
+     interior profundo. El contraste entre estas capas es lo que hace
+     que el volumen se lea construido. */
+  stucco: mix(OFF_WHITE, CAMO, 0.32),
+  slabFascia: mix(CAMO, OFF_WHITE, 0.38),
+  party: mix(OFF_WHITE, OFF_BLACK, 0.28),
+  soffit: mix(CAMO, OFF_BLACK, 0.34),
+  glass: mix(OFF_BLACK, CAMO, 0.2),
+  glassLit: mix(CAMO, OFF_WHITE, 0.3),
+  mullion: mix(OFF_BLACK, CAMO, 0.08),
+  rail: mix(OFF_BLACK, CAMO, 0.14),
+  railCap: mix(OFF_BLACK, CAMO, 0.06),
+  groundFloor: mix(OFF_BLACK, OFF_WHITE, 0.4),
+  interior: mix(OFF_BLACK, CAMO, 0.1),
+  interiorLit: mix(CAMO, OFF_WHITE, 0.32),
 } as const;
 
 /**
@@ -155,9 +159,9 @@ export const MOOD = {
        ambiental un poco más contenido. El edificio tiene que separarse del
        entorno con luz, no sólo con color — sobre todo ahora que hay
        vecinos reales alrededor compitiendo por atención. */
-    keyIntensity: 1.95,
-    ambientIntensity: 0.3,
-    exposure: 1.1,
+    keyIntensity: 2.25,
+    ambientIntensity: 0.16,
+    exposure: 1.08,
     /* fogFar debe quedar DENTRO de camera.far (40) o el cielo/árboles "pop". */
     fogNear: 12,
     fogFar: 36,
@@ -167,9 +171,9 @@ export const MOOD = {
     fill: mix(OFF_BLACK, CAMO, 0.5),
     ambient: mix(OFF_BLACK, CAMO, 0.42),
     bounce: mix(CAMO, OFF_WHITE, 0.35),
-    keyIntensity: 1.5,
-    ambientIntensity: 0.26,
-    exposure: 1.16,
+    keyIntensity: 1.62,
+    ambientIntensity: 0.2,
+    exposure: 1.12,
     fogNear: 10,
     fogFar: 34,
   },

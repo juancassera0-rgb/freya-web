@@ -56,7 +56,7 @@ function buildHeightField(size: number): Float32Array {
      cualquier distancia. */
   const panelCount = 4 + Math.floor(rand() * 2);
   const panelTone: number[] = [];
-  for (let p = 0; p < panelCount; p += 1) panelTone.push((rand() - 0.5) * 68);
+  for (let p = 0; p < panelCount; p += 1) panelTone.push((rand() - 0.5) * 92);
 
   const edgeSoft = size / (panelCount * 5); // ancho del degradé en la junta
 
@@ -122,7 +122,7 @@ function getAlbedoCanvas(): HTMLCanvasElement {
        que el promedio se mantiene alto — cerca de blanco — para no correr
        ni el tono ni el roughness reales del material: sólo module, en un
        rango realista de variación de paño de hormigón (~±20%). */
-    const v = THREE.MathUtils.clamp(233 + height[i] * 1.05, 178, 255);
+    const v = THREE.MathUtils.clamp(218 + height[i] * 1.15, 148, 248);
     img.data[i * 4] = v;
     img.data[i * 4 + 1] = v;
     img.data[i * 4 + 2] = v;
@@ -185,7 +185,7 @@ function buildNormalCanvas(): HTMLCanvasElement {
     height[((y + size) % size) * size + ((x + size) % size)];
 
   // Gradiente de altura → normal en espacio tangente.
-  const strength = 0.06;
+  const strength = 0.1;
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const dx = (at(x + 1, y) - at(x - 1, y)) * strength;

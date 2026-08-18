@@ -64,6 +64,11 @@ export function ProceduralEnvironment({ mood }: Props) {
           vec3 sky = mix(uHorizon, uTop, smoothstep(0.0, 0.85, h));
           // Por debajo del horizonte, el rebote del suelo
           vec3 col = mix(uGround, sky, smoothstep(-0.12, 0.06, h));
+          // Disco solar: un highlight en el cubemap para que el vidrio
+          // capture un especular creíble sin un HDRI externo.
+          vec3 sunDir = normalize(vec3(0.42, 0.72, 0.28));
+          float sun = pow(max(0.0, dot(d, sunDir)), 48.0);
+          col += vec3(1.0, 0.96, 0.88) * sun * 1.8;
           gl_FragColor = vec4(col, 1.0);
         }
       `,

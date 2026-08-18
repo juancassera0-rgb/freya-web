@@ -135,13 +135,13 @@ export function Project3DScene({
       </directionalLight>
 
       {/* Relleno — rebote del cielo */}
-      <directionalLight position={[-5, 4, -3]} intensity={0.24} color={mood.fill} />
+      <directionalLight position={[-5, 4, -3]} intensity={0.14} color={mood.fill} />
 
       {/* Rim: separa el volumen del fondo. Se omite en gama baja */}
       {!low && (
         <directionalLight
           position={[-2, 2.5, 5]}
-          intensity={isHero ? 0.3 : 0.18}
+          intensity={isHero ? 0.22 : 0.12}
           color={mood.fill}
         />
       )}
@@ -151,13 +151,13 @@ export function Project3DScene({
       {!low && (
         <directionalLight
           position={[0.5, -2.5, 3]}
-          intensity={isHero ? 0.2 : 0.16}
+          intensity={isHero ? 0.14 : 0.1}
           color={mood.bounce}
         />
       )}
 
       <ambientLight intensity={mood.ambientIntensity} color={mood.ambient} />
-      <hemisphereLight args={[mood.horizon, SITE.grass, isHero ? 0.35 : 0.42]} />
+      <hemisphereLight args={[mood.horizon, SITE.grass, isHero ? 0.22 : 0.2]} />
 
       {/* Emplazamiento: vereda, cordón, calzada, tipas laterales */}
       <SiteContext mood={sceneMood} detail={tier} />
@@ -167,9 +167,9 @@ export function Project3DScene({
       {!low && (
         <ContactShadows
           position={[0, 0.06, 0]}
-          opacity={isHero ? 0.42 : 0.32}
+          opacity={isHero ? 0.5 : 0.4}
           scale={12}
-          blur={2.2}
+          blur={1.8}
           far={4.2}
           resolution={high ? 512 : 256}
           frames={1}

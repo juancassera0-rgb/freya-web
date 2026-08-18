@@ -358,16 +358,16 @@ export function SalesCenterScene({
       </directionalLight>
 
       {/* Relleno y rim: sin sombra, coste despreciable */}
-      <directionalLight position={[-5, 4, -3]} intensity={0.24} color={MOOD.day.fill} />
+      <directionalLight position={[-5, 4, -3]} intensity={0.14} color={MOOD.day.fill} />
       {!low && (
-        <directionalLight position={[-2, 2.5, 5]} intensity={0.2} color={MOOD.day.fill} />
+        <directionalLight position={[-2, 2.5, 5]} intensity={0.12} color={MOOD.day.fill} />
       )}
       {/* Rebote cálido del suelo hacia los intradoses de balcón: es lo que
           saca al edificio del gris y le da la calidez de los renders. */}
       {!low && (
         <directionalLight
           position={[0.5, -2.5, 3]}
-          intensity={0.16}
+          intensity={0.1}
           color={MOOD.day.bounce}
         />
       )}
@@ -375,7 +375,7 @@ export function SalesCenterScene({
         intensity={low ? 0.46 : MOOD.day.ambientIntensity}
         color={MOOD.day.ambient}
       />
-      <hemisphereLight args={[SITE.skyHorizonDay, SITE.grass, 0.42]} />
+      <hemisphereLight args={[SITE.skyHorizonDay, SITE.grass, 0.2]} />
 
       {!isUnit && <SiteContext mood="day" detail={tier} />}
       {!isUnit && <NeighbourContext detail={tier} />}
@@ -401,9 +401,9 @@ export function SalesCenterScene({
       {!low && (
         <ContactShadows
           position={[0, isUnit ? -0.06 : 0.062, 0]}
-          opacity={0.32}
+          opacity={0.4}
           scale={isUnit ? 8 : 12}
-          blur={2.4}
+          blur={1.9}
           far={4.5}
           resolution={high ? 512 : 256}
           frames={1}
