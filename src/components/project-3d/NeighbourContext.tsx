@@ -1,128 +1,141 @@
 "use client";
 
+import { Instance, Instances } from "@react-three/drei";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { SITE } from "./sceneTokens";
-import { SITE_DIMS, towerTotalH } from "./siteDims";
+import { SITE_DIMS } from "./siteDims";
 
 type Props = {
   detail: "low" | "medium" | "high";
-  /** Pisos del proyecto (default 9 = SOW / Beauchef esquemático) */
-  floors?: number;
 };
 
-const { W, D, CANTILEVER } = SITE_DIMS;
+const { W } = SITE_DIMS;
+
+type Mass = {
+  x: number;
+  z: number;
+  w: number;
+  d: number;
+  h: number;
+  tone: "near" | "mid" | "far";
+};
 
 /**
- * MEDIANERAS — contexto inmediato de Beauchef 620, no ciudad procedural.
+ * Manzana inmediata — pocas casas bajas, hueco hacia la calle (+Z) para
+ * no tapar el encuadre. Ninguna toca Freya: el protagonista queda solo.
  *
- * Street View de Beauchef 620 (Caballito): tejido denso, PB + pisos bajos/
- * medios, estuco ciego en los laterales del lote, sin "torres sueltas" a
- * 15–20 unidades. El producto tiene que leerse encajado entre vecinos
- * reales, más bajos, sin fachadas inventadas que peleen con FREYA.
- *
- * Por eso: sólo tres losas ciegas (sin mapa de ventanas):
- *  1. Derecha — contra la medianera ciega del edificio
- *  2. Izquierda — contra el límite del balcón (lote pasante)
- *  3. Fondo — cara de manzana más baja o igual (nunca más alta)
- *
- * Gama baja: nada. Media: laterales. Alta: laterales + fondo.
+ * Escala: Freya ~4.2 de alto. Estos volúmenes son PH / casa baja 2–4 pisos.
+ * El hueco a cada lado es mayor que el espesor de una medianera (~W*0.5).
  */
-export function NeighbourContext({ detail, floors = 9 }: Props) {
+const GAP = W * 0.55;
+
+const NEAR: Mass[] = [
+  /* Izquierda, separado de la medianera */
+  { x: -W / 2 - GAP - 0.51, z: -0.22, w: 1.02, d: 1.32, h: 1.22, tone: "near" },
+  /* Más a la izquierda, más bajo — ritmo de cuadra */
+  { x: -3.48, z: 0.08, w: 0.92, d: 1.08, h: 0.74, tone: "mid" },
+  /* Derecha, retranqueado respecto de nuestra fachada */
+  { x: W / 2 + GAP + 0.52, z: -0.68, w: 0.86, d: 1.12, h: 1.18, tone: "near" },
+];
+
+const FAR: Mass[] = [
+  /* Fondo de manzana, corrido a la izquierda — no se mete en la silueta */
+  { x: -3.55, z: -2.35, w: 1.28, d: 0.78, h: 0.92, tone: "far" },
+  /* Más a la derecha, más bajo — cierra la cuadra sin competir */
+  { x: 4.05, z: -0.55, w: 1.12, d: 1.18, h: 0.78, tone: "mid" },
+];
+
+/**
+ * Contexto urbano mínimo. Una geometría, materiales compartidos, Instances.
+ * Sin sombras propias: el mapa de sombra queda para Freya.
+ */
+export function NeighbourContext({ detail }: Props) {
   const low = detail === "low";
   const high = detail === "high";
-  const totalH = towerTotalH(floors);
 
-  const walls = useMemo(() => {
-    if (low) return [] as const;
+  const mats = useMemo(() => {
+    const lambert = (color: string) =>
+      new THREE.MeshLambertMaterial({ color });
+    return {
+      near: lambert(SITE.neighbourShade),
+      mid: lambert(SITE.neighbour),
+      far: lambert(SITE.neighbourFar),
+      ground: lambert(SITE.sidewalkJoint),
+    };
+  }, []);
 
-    const gap = 0.05;
-    const thick = 0.12;
-    const rightFace = W / 2 + 0.06;
-    const leftEdge = W / 2 + CANTILEVER;
-    const rearFace = -D / 2;
-
-    const laterals = [
-      {
-        key: "right",
-        x: rightFace + gap + thick / 2,
-        z: 0.02,
-        w: thick,
-        h: totalH * 0.58,
-        d: D * 0.88,
-        color: SITE.neighbour,
-      },
-      {
-        key: "left",
-        x: -(leftEdge + gap + thick / 2),
-        z: 0.02,
-        w: thick,
-        h: totalH * 0.72,
-        d: D * 0.88,
-        color: SITE.neighbourShade,
-      },
-    ] as const;
-
-    if (!high) return laterals;
-
-    return [
-      ...laterals,
-      {
-        key: "rear",
-        x: 0,
-        z: rearFace - gap - 0.55,
-        w: W * 1.05,
-        h: totalH * 0.92,
-        d: thick * 1.4,
-        color: SITE.neighbourShade,
-      },
-    ] as const;
-  }, [low, high, totalH]);
-
-  const mat = useMemo(
-    () =>
-      new THREE.MeshLambertMaterial({
-        color: SITE.stucco,
-      }),
-    [],
-  );
-
-  const mats = useMemo(
-    () =>
-      walls.map(
-        (w) =>
-          new THREE.MeshLambertMaterial({
-            color: w.color,
-          }),
-      ),
-    [walls],
-  );
-
-  const geo = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
+  const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
 
   useEffect(() => {
     return () => {
-      mat.dispose();
-      mats.forEach((m) => m.dispose());
-      geo.dispose();
+      Object.values(mats).forEach((m) => m.dispose());
+      box.dispose();
     };
-  }, [mat, mats, geo]);
+  }, [mats, box]);
 
-  if (walls.length === 0) return null;
+  if (low) return null;
+
+  const masses = high ? [...NEAR, ...FAR] : NEAR;
+  const byTone = {
+    near: masses.filter((m) => m.tone === "near"),
+    mid: masses.filter((m) => m.tone === "mid"),
+    far: masses.filter((m) => m.tone === "far"),
+  } as const;
 
   return (
     <group>
-      {walls.map((w, i) => (
-        <mesh
-          key={w.key}
-          geometry={geo}
-          material={mats[i] ?? mat}
-          position={[w.x, w.h / 2, w.z]}
-          scale={[w.w, w.h, w.d]}
+      {/* Solado de manzana: las casas no flotan sobre el vacío */}
+      <mesh
+        geometry={box}
+        material={mats.ground}
+        position={[0, -0.012, -1.1]}
+        scale={[11.5, 0.02, 3.0]}
+        receiveShadow={false}
+        castShadow={false}
+      />
+
+      {(Object.keys(byTone) as Array<keyof typeof byTone>).map((tone) => {
+        const list = byTone[tone];
+        if (list.length === 0) return null;
+        return (
+          <Instances
+            key={tone}
+            limit={list.length}
+            range={list.length}
+            geometry={box}
+            material={mats[tone]}
+            castShadow={false}
+            receiveShadow={false}
+          >
+            {list.map((m) => (
+              <Instance
+                key={`${m.x}:${m.z}`}
+                position={[m.x, m.h / 2, m.z]}
+                scale={[m.w, m.h, m.d]}
+              />
+            ))}
+          </Instances>
+        );
+      })}
+
+      {high && (
+        <Instances
+          limit={3}
+          range={3}
+          geometry={box}
+          material={mats.far}
           castShadow={false}
-          receiveShadow={false}
-        />
-      ))}
+        >
+          {NEAR.slice(0, 3).map((m) => (
+            <Instance
+              key={`r-${m.x}`}
+              position={[m.x, m.h + 0.03, m.z]}
+              scale={[m.w * 0.92, 0.045, m.d * 0.92]}
+            />
+          ))}
+        </Instances>
+      )}
     </group>
   );
 }

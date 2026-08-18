@@ -37,14 +37,40 @@ type Props = {
 /* --------------------------------------------------------------------------
    PROPORCIONES — derivadas de los renders del proyecto (ver siteDims.ts).
    -------------------------------------------------------------------------- */
-const { W, D, FLOOR_H, GROUND_H, SLAB_T, CANTILEVER } = SITE_DIMS;
-const RAIL_H = 0.13;
-const PARTY_EXTRA = 0.55;
+const { W, FLOOR_H, GROUND_H, SLAB_T, CANTILEVER, WALL, FRONT_Z, BACK_Z } =
+  SITE_DIMS;
+/* --------------------------------------------------------------------------
+   ENVOLVENTE — un prisma que CIERRA.
+
+     FRONT_Z  vidrio a la calle
+     BACK_Z   contrafrente (ciego)
+     LEFT/RIGHT medianeras del lote, unidas a losas y contrafrente
+
+   Sin esto el edificio es un sandwich abierto: se ve el cielo entre
+   pisos y aparece una placa suelta al costado. Eso no es un edificio.
+   -------------------------------------------------------------------------- */
+const CORE_D = FRONT_Z - BACK_Z;
+const CORE_Z = (FRONT_Z + BACK_Z) / 2;
+/** Holgura losa/muro: caras coplanares se pelean en el z-buffer y
+    la losa “perfora” el borde visto desde afuera. */
+const FIT = 0.02;
+const INNER_W = W - WALL * 2 - FIT * 2;
+const PLATE_D = CORE_D - WALL - FIT * 2;
+const PLATE_Z = (BACK_Z + WALL + FIT + FRONT_Z - FIT) / 2;
+/** Medianera: arranca después del contrafrente, no se superpone en la esquina. */
+const SIDE_D = CORE_D - WALL;
+const SIDE_Z = (BACK_Z + WALL + FRONT_Z) / 2;
+/** Voladizo: un pelo adelante del plano de fachada, nunca a ras del muro. */
+const BALC_W = W - FIT * 2;
+const BALC_START = FRONT_Z + 0.012;
+const BALC_Z = BALC_START + CANTILEVER / 2;
+const RAIL_Z = BALC_START + CANTILEVER - 0.018;
+const RAIL_H = 0.11;
+const PICK_Z = (BACK_Z + WALL + FIT + BALC_START + CANTILEVER) / 2;
 
 const COL = {
   stucco: SITE.stucco,
   slabFascia: SITE.slabFascia,
-  soffit: SITE.soffit,
   glass: SITE.glass,
   glassLit: SITE.glassLit,
   mullion: SITE.mullion,
@@ -55,7 +81,6 @@ const COL = {
   accent: BRAND.camo,
   interior: SITE.interior,
   interiorLit: SITE.interiorLit,
-  party: SITE.party,
 };
 
 export function ArchitecturalMassing({
@@ -126,13 +151,18 @@ export function ArchitecturalMassing({
     const concreteMap = getConcreteMap();
     const concreteRoughnessMap = getConcreteRoughnessMap();
     const concreteNormalMap = getConcreteNormalMap();
-    const concrete = (color: string, roughness: number) =>
+    const concrete = (
+      color: string,
+      roughness: number,
+      extra: Partial<THREE.MeshStandardMaterialParameters> = {},
+    ) =>
       make(color, roughness, {
         map: concreteMap,
         roughnessMap: concreteRoughnessMap,
         normalMap: concreteNormalMap,
         normalScale: new THREE.Vector2(1.05, 1.05),
         envMapIntensity: 0.22,
+        ...extra,
       });
 
     const glass = (
@@ -142,22 +172,27 @@ export function ArchitecturalMassing({
     ) =>
       new THREE.MeshPhysicalMaterial({
         color,
-        roughness: 0.045,
+        roughness: 0.035,
         metalness,
-        envMapIntensity: 2.1,
+        envMapIntensity: 2.6,
         transparent: true,
         opacity,
         clearcoat: 1,
-        clearcoatRoughness: 0.06,
-        ior: 1.45,
+        clearcoatRoughness: 0.04,
+        ior: 1.5,
         specularIntensity: 1,
-        thickness: 0.08,
+        thickness: 0.22,
+        attenuationColor: COL.glass,
+        attenuationDistance: 0.6,
       });
 
     return {
       stucco: concrete(COL.stucco, 0.88),
-      fascia: concrete(COL.slabFascia, 0.72),
-      soffit: concrete(COL.soffit, 0.9),
+      fascia: concrete(COL.slabFascia, 0.72, {
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1,
+      }),
       mullion: make(COL.mullion, 0.28, {
         metalness: 0.82,
         envMapIntensity: 0.9,
@@ -167,18 +202,20 @@ export function ArchitecturalMassing({
         envMapIntensity: 0.7,
       }),
       ground: concrete(COL.ground, 0.86),
-      party: concrete(COL.party, 0.9),
       green: make(COL.green, 1),
-      accent: make(COL.accent, 0.6),
 
       interior: make(COL.interior, 0.97, { envMapIntensity: 0.05 }),
       interiorLit: make(COL.interiorLit, 0.92, { envMapIntensity: 0.12 }),
 
-      glassBase: glass(COL.glass, 0.42, 0.1),
-      glassEmph: glass(COL.glassLit, 0.55, 0.06),
-      glassDim: glass(COL.glass, 0.16, 0.1),
+      glassBase: glass(COL.glass, 0.52, 0.08),
+      glassEmph: glass(COL.glassLit, 0.62, 0.05),
+      glassDim: glass(COL.glass, 0.18, 0.08),
 
-      slabBase: concrete(COL.slabFascia, 0.72),
+      slabBase: concrete(COL.slabFascia, 0.72, {
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1,
+      }),
       slabEmph: make(COL.accent, 0.7),
       slabDim: make(COL.slabFascia, 0.78, { transparent: true, opacity: 0.3 }),
 
@@ -192,28 +229,33 @@ export function ArchitecturalMassing({
     return () => Object.values(mat).forEach((m) => m.dispose());
   }, [mat]);
 
-  /* ---------- Geometrías compartidas ---------- */
-  const geo = useMemo(
-    () => ({
-      slab: new THREE.BoxGeometry(W + CANTILEVER * 2, SLAB_T, D * 0.52),
-      slabReturn: new THREE.BoxGeometry(CANTILEVER, SLAB_T, D * 0.4),
-      soffit: new THREE.BoxGeometry(W + CANTILEVER * 2 - 0.04, 0.01, D * 0.5),
-      slabEdge: new THREE.BoxGeometry(W + CANTILEVER * 2, SLAB_T * 1.15, 0.028),
-      /* Vidrio FINO, no un bloque: el paño grueso anterior se leía como
-         masa blanca. Profundidad real = interior recedido + revel. */
-      glazing: new THREE.BoxGeometry(W * 0.86, FLOOR_H * 0.64, 0.02),
-      interior: new THREE.BoxGeometry(W * 0.9, FLOOR_H * 0.72, D * 0.28),
-      revealH: new THREE.BoxGeometry(W * 0.9, 0.018, 0.05),
-      revealV: new THREE.BoxGeometry(0.018, FLOOR_H * 0.68, 0.05),
-      transom: new THREE.BoxGeometry(W * 0.86, 0.012, 0.018),
-      mullion: new THREE.BoxGeometry(0.014, FLOOR_H * 0.64, 0.018),
-      rail: new THREE.BoxGeometry(W + CANTILEVER * 2 - 0.03, RAIL_H, 0.01),
-      railSide: new THREE.BoxGeometry(0.01, RAIL_H, D * 0.5),
-      railCap: new THREE.BoxGeometry(W + CANTILEVER * 2 - 0.02, 0.008, 0.016),
-      pick: new THREE.BoxGeometry(W + CANTILEVER * 2, FLOOR_H * 0.95, D * 0.6),
-    }),
-    [],
-  );
+  /* ---------- Geometrías ----------
+     Prisma ciego (medianeras + contrafrente + techo) y, por piso, una
+     losa INTERIOR que no atraviesa muros + un voladizo SOLO a calle.
+     Si la losa es un solo bloque del tamaño del lote, perfora las
+     paredes: se lee como bug, no como arquitectura. */
+  const geo = useMemo(() => {
+    const glassH = FLOOR_H - SLAB_T - 0.016;
+    const bayW = (INNER_W - 0.06) / 3;
+    return {
+      floorPlate: new THREE.BoxGeometry(INNER_W, SLAB_T, PLATE_D),
+      balcony: new THREE.BoxGeometry(BALC_W, SLAB_T, CANTILEVER),
+      column: new THREE.BoxGeometry(0.048, glassH, 0.048),
+      glassBay: new THREE.BoxGeometry(bayW - 0.012, glassH, 0.011),
+      mullion: new THREE.BoxGeometry(0.014, glassH, 0.018),
+      rear: new THREE.BoxGeometry(W, 1, WALL),
+      side: new THREE.BoxGeometry(WALL, 1, SIDE_D),
+      interiorRear: new THREE.BoxGeometry(INNER_W - 0.02, 1, 0.018),
+      interiorSide: new THREE.BoxGeometry(0.018, 1, SIDE_D - FIT * 2),
+      rail: new THREE.BoxGeometry(BALC_W - 0.08, RAIL_H, 0.008),
+      railSide: new THREE.BoxGeometry(0.008, RAIL_H, CANTILEVER - 0.02),
+      railPost: new THREE.BoxGeometry(0.011, RAIL_H, 0.011),
+      railCap: new THREE.BoxGeometry(BALC_W - 0.06, 0.007, 0.013),
+      railCapSide: new THREE.BoxGeometry(0.013, 0.007, CANTILEVER - 0.01),
+      pick: new THREE.BoxGeometry(INNER_W, FLOOR_H * 0.95, PLATE_D + CANTILEVER),
+      lobbyGlass: new THREE.BoxGeometry(INNER_W - 0.08, GROUND_H * 0.84, 0.012),
+    };
+  }, []);
 
   useEffect(() => {
     return () => Object.values(geo).forEach((g) => g.dispose());
@@ -261,91 +303,107 @@ export function ArchitecturalMassing({
     }
   });
 
+  const envelopeY = totalH / 2;
+
   return (
     <group ref={group}>
-      {/* ==========================================================
-          BASAMENTO — planta baja retranqueada, acceso y cochera
-          ========================================================== */}
+      {/* Prisma cerrado: contrafrente + medianeras + piso + techo.
+          Mismo material que el resto del edificio — si la medianera es
+          otro gris, se lee como una placa suelta (el error del render). */}
+      <mesh
+        geometry={geo.rear}
+        position={[0, envelopeY, BACK_Z + WALL / 2]}
+        scale={[1, totalH, 1]}
+        castShadow
+        receiveShadow
+        material={mat.stucco}
+      />
+      <mesh
+        geometry={geo.side}
+        position={[-W / 2 + WALL / 2, envelopeY, SIDE_Z]}
+        scale={[1, totalH, 1]}
+        castShadow
+        receiveShadow
+        material={mat.stucco}
+      />
+      <mesh
+        geometry={geo.side}
+        position={[W / 2 - WALL / 2, envelopeY, SIDE_Z]}
+        scale={[1, totalH, 1]}
+        castShadow
+        receiveShadow
+        material={mat.stucco}
+      />
+      <mesh
+        geometry={geo.interiorRear}
+        position={[0, envelopeY, BACK_Z + WALL + 0.012]}
+        scale={[1, totalH - SLAB_T * 2, 1]}
+        material={mat.interior}
+      />
+      <mesh
+        geometry={geo.interiorSide}
+        position={[-W / 2 + WALL + FIT, envelopeY, SIDE_Z]}
+        scale={[1, totalH - SLAB_T * 2, 1]}
+        material={mat.interior}
+      />
+      <mesh
+        geometry={geo.interiorSide}
+        position={[W / 2 - WALL - FIT, envelopeY, SIDE_Z]}
+        scale={[1, totalH - SLAB_T * 2, 1]}
+        material={mat.interior}
+      />
+      <mesh
+        geometry={geo.floorPlate}
+        position={[0, SLAB_T / 2, PLATE_Z]}
+        receiveShadow
+        material={mat.fascia}
+      />
+      <mesh
+        geometry={geo.floorPlate}
+        position={[0, totalH - SLAB_T / 2 - 0.01, PLATE_Z]}
+        receiveShadow
+        material={mat.fascia}
+      />
+
+      {/* PB: el mismo prisma, frente de vidrio retranqueado */}
       <group>
-        {/* Masa de PB: revoque, no un bloque de vidrio. El paño vidriado
-           es una fachada fina al frente. */}
-        <mesh
-          position={[0, GROUND_H / 2, -D * 0.08]}
-          castShadow
-          receiveShadow
-          material={mat.ground}
-        >
-          <boxGeometry args={[W * 0.92, GROUND_H, D * 0.78]} />
-        </mesh>
-
-        <mesh
-          position={[0, GROUND_H * 0.48, D * 0.28]}
-          material={mat.interiorLit}
-        >
-          <boxGeometry args={[W * 0.7, GROUND_H * 0.7, 0.08]} />
-        </mesh>
-
-        <mesh
-          position={[0, GROUND_H * 0.5, D * 0.34]}
-          castShadow
-          material={mat.glassBase}
-        >
-          <boxGeometry args={[W * 0.72, GROUND_H * 0.78, 0.02]} />
-        </mesh>
-
-        {[-1, 1].map((s) => (
+        {[-0.28, 0.28].map((f) => (
           <mesh
-            key={s}
-            position={[s * (W / 2 - 0.05), GROUND_H / 2, D * 0.32]}
+            key={`gc-${f}`}
+            position={[f * W, GROUND_H / 2, FRONT_Z]}
             castShadow
-            material={mat.mullion}
+            material={mat.ground}
           >
-            <boxGeometry args={[0.04, GROUND_H, 0.04]} />
+            <boxGeometry args={[0.055, GROUND_H, 0.055]} />
           </mesh>
         ))}
-
         <mesh
-          position={[-W * 0.28, GROUND_H / 2, D * 0.22]}
-          castShadow
-          receiveShadow
-          material={mat.ground}
+          position={[0, GROUND_H * 0.5, FRONT_Z - 0.08]}
+          material={mat.interiorLit}
         >
-          <boxGeometry args={[W * 0.3, GROUND_H, 0.1]} />
+          <planeGeometry args={[W - WALL * 2 - 0.12, GROUND_H * 0.72]} />
         </mesh>
-
         <mesh
-          position={[0, GROUND_H, D * 0.06]}
+          position={[0, GROUND_H * 0.5, FRONT_Z]}
+          geometry={geo.lobbyGlass}
+          material={mat.glassBase}
+        />
+        <mesh
+          position={[0, GROUND_H, PLATE_Z]}
           castShadow
           receiveShadow
+          geometry={geo.floorPlate}
           material={mat.fascia}
-        >
-          <boxGeometry args={[W + CANTILEVER * 2, SLAB_T * 1.5, D * 0.62]} />
-        </mesh>
+        />
+        <mesh
+          position={[0, GROUND_H, BALC_Z]}
+          castShadow
+          receiveShadow
+          geometry={geo.balcony}
+          material={mat.fascia}
+        />
       </group>
 
-      {/* ==========================================================
-          MEDIANERA CIEGA — silueta característica de la torre
-          ========================================================== */}
-      <mesh
-        position={[W / 2 + 0.06, (totalH + PARTY_EXTRA) / 2, -D * 0.06]}
-        castShadow
-        receiveShadow
-        material={mat.party}
-      >
-        <boxGeometry args={[0.12, totalH + PARTY_EXTRA, D * 0.98]} />
-      </mesh>
-      <mesh
-        position={[0, (totalH + PARTY_EXTRA * 0.55) / 2, -D / 2]}
-        castShadow
-        receiveShadow
-        material={mat.party}
-      >
-        <boxGeometry args={[W + 0.12, totalH + PARTY_EXTRA * 0.55, 0.12]} />
-      </mesh>
-
-      {/* ==========================================================
-          NIVELES CON BALCÓN
-          ========================================================== */}
       {Array.from({ length: towerFloors }, (_, i) => {
         const level = i + 1;
         const active = highlightedFloor === level;
@@ -353,9 +411,6 @@ export function ArchitecturalMassing({
         const isHovered = hoveredFloor === level;
         const emphasised = active || isSelectedFloor || isHovered;
         const dimmed = dimOthers && !emphasised;
-
-        /* Selección de material: referencias ya existentes, sin crear nada.
-           Esto es lo que hace que el hover no cueste. */
         const glassMat = dimmed
           ? mat.glassDim
           : emphasised
@@ -367,6 +422,11 @@ export function ArchitecturalMassing({
             ? mat.slabEmph
             : mat.slabBase;
         const railMat = dimmed ? mat.railDim : mat.railBase;
+        const glassH = FLOOR_H - SLAB_T - 0.016;
+        const glassY = SLAB_T / 2 + glassH / 2;
+        const inner = W / 2 - WALL - 0.02;
+        const cols = [-inner, -inner / 3, inner / 3, inner];
+        const bays = [-inner * 0.66, 0, inner * 0.66];
 
         return (
           <group
@@ -377,11 +437,10 @@ export function ArchitecturalMassing({
             }}
             position={[0, floorY(level, explode), 0]}
           >
-            {/* Captura de hover/click del nivel */}
             {onSelectFloor ? (
               <mesh
                 geometry={geo.pick}
-                position={[0, FLOOR_H * 0.35, D * 0.1]}
+                position={[0, FLOOR_H * 0.35, PICK_Z]}
                 visible={false}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -399,162 +458,142 @@ export function ArchitecturalMassing({
               />
             ) : null}
 
-            {/* Volumen interior recedido — oscuro, da profundidad al paño */}
             <mesh
-              geometry={geo.interior}
-              position={[0, FLOOR_H * 0.4, -D * 0.18]}
-              material={emphasised ? mat.interiorLit : mat.interior}
-              castShadow={false}
+              geometry={geo.floorPlate}
+              position={[0, 0, PLATE_Z]}
               receiveShadow
+              material={slabMat}
             />
-
-            {/* Revel de ventana: el canto que separa revoque y vidrio */}
-            {!lite && (
-              <>
-                <mesh
-                  geometry={geo.revealH}
-                  position={[0, FLOOR_H * 0.74, D * 0.02]}
-                  material={mat.stucco}
-                />
-                <mesh
-                  geometry={geo.revealH}
-                  position={[0, FLOOR_H * 0.08, D * 0.02]}
-                  material={mat.stucco}
-                />
-                {[-0.44, 0.44].map((f) => (
-                  <mesh
-                    key={`rv-${f}`}
-                    geometry={geo.revealV}
-                    position={[f * W, FLOOR_H * 0.41, D * 0.02]}
-                    material={mat.stucco}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Paño de vidrio fino, retirado detrás del balcón */}
             <mesh
-              geometry={geo.glazing}
-              position={[0, FLOOR_H * 0.42, D * 0.04]}
-              material={glassMat}
+              geometry={geo.balcony}
+              position={[0, 0, BALC_Z]}
+              castShadow={!lite}
+              receiveShadow
+              material={slabMat}
             />
 
-            {/* Montantes + travesaño: carpintería metálica oscura */}
+            {cols.map((x) => (
+              <mesh
+                key={`c-${x}`}
+                geometry={geo.column}
+                position={[x, glassY, FRONT_Z - 0.01]}
+                castShadow={!lite}
+                material={mat.ground}
+              />
+            ))}
+
+            {bays.map((x) => (
+              <mesh
+                key={`g-${x}`}
+                geometry={geo.glassBay}
+                position={[x, glassY, FRONT_Z - 0.006]}
+                material={glassMat}
+              />
+            ))}
             {!lite &&
-              [-0.29, 0, 0.29].map((f) => (
+              cols.slice(1, 3).map((x) => (
                 <mesh
-                  key={f}
+                  key={`m-${x}`}
                   geometry={geo.mullion}
-                  position={[f * W, FLOOR_H * 0.42, D * 0.052]}
+                  position={[x, glassY, FRONT_Z]}
                   material={mat.mullion}
                 />
               ))}
-            {!lite && (
-              <mesh
-                geometry={geo.transom}
-                position={[0, FLOOR_H * 0.58, D * 0.052]}
-                material={mat.mullion}
-              />
-            )}
 
-            {/* LOSA DE BALCÓN — gesto dominante de la fachada */}
-            <mesh
-              geometry={geo.slab}
-              position={[0, 0, D * 0.16]}
-              castShadow={!lite}
-              receiveShadow
-              material={slabMat}
-            />
-            <mesh
-              geometry={geo.slabEdge}
-              position={[0, 0, D * 0.16 + D * 0.26]}
-              castShadow={!lite}
-              material={mat.soffit}
-            />
-            <mesh
-              geometry={geo.slabReturn}
-              position={[-(W / 2 + CANTILEVER / 2), 0, -D * 0.1]}
-              castShadow={!lite}
-              receiveShadow
-              material={slabMat}
-            />
-            {/* Intradós: la losa deja de ser un plano de papel */}
-            {!lite && (
-              <mesh
-                geometry={geo.soffit}
-                position={[0, -SLAB_T / 2 - 0.006, D * 0.14]}
-                material={mat.soffit}
-              />
-            )}
-
-            {/* Baranda de vidrio tintado + pasamano metálico */}
             <mesh
               geometry={geo.rail}
-              position={[0, RAIL_H / 2 + SLAB_T / 2, D * 0.16 + D * 0.26]}
+              position={[0, RAIL_H / 2 + SLAB_T / 2, RAIL_Z]}
               material={railMat}
             />
             <mesh
               geometry={geo.railCap}
-              position={[0, RAIL_H + SLAB_T / 2, D * 0.16 + D * 0.26]}
+              position={[0, RAIL_H + SLAB_T / 2, RAIL_Z]}
               material={mat.railCap}
             />
-            <mesh
-              geometry={geo.railSide}
-              position={[
-                -(W / 2 + CANTILEVER - 0.01),
-                RAIL_H / 2 + SLAB_T / 2,
-                -D * 0.08,
-              ]}
-              material={railMat}
-            />
+            {[-1, 1].map((side) => (
+              <group key={`rs-${side}`}>
+                <mesh
+                  geometry={geo.railSide}
+                  position={[
+                    side * (BALC_W / 2 - 0.01),
+                    RAIL_H / 2 + SLAB_T / 2,
+                    BALC_Z,
+                  ]}
+                  material={railMat}
+                />
+                <mesh
+                  geometry={geo.railCapSide}
+                  position={[
+                    side * (BALC_W / 2 - 0.01),
+                    RAIL_H + SLAB_T / 2,
+                    BALC_Z,
+                  ]}
+                  material={mat.railCap}
+                />
+              </group>
+            ))}
+            {!lite &&
+              cols.map((x) => (
+                <mesh
+                  key={`p-${x}`}
+                  geometry={geo.railPost}
+                  position={[x, RAIL_H / 2 + SLAB_T / 2, RAIL_Z]}
+                  material={mat.railCap}
+                />
+              ))}
           </group>
         );
       })}
 
-      {/* ==========================================================
-          PENTHOUSE — retiro superior con parapeto y vegetación
-          ========================================================== */}
       <group ref={crownRef} position={[0, GROUND_H + towerH, 0]}>
         <mesh
-          position={[0, FLOOR_H * 0.5, -D * 0.14]}
+          position={[0, FLOOR_H * 0.4, CORE_Z - 0.08]}
           castShadow
           receiveShadow
           material={mat.stucco}
         >
-          <boxGeometry args={[W * 0.82, FLOOR_H, D * 0.5]} />
+          <boxGeometry args={[W - WALL * 2 - 0.08, FLOOR_H * 0.78, CORE_D * 0.55]} />
         </mesh>
         <mesh
-          position={[0, FLOOR_H * 0.5, D * 0.11]}
+          position={[0, FLOOR_H * 0.38, FRONT_Z - 0.12]}
           material={mat.glassBase}
         >
-          <boxGeometry args={[W * 0.72, FLOOR_H * 0.62, 0.02]} />
+          <boxGeometry args={[W * 0.48, FLOOR_H * 0.55, 0.012]} />
         </mesh>
-        <mesh position={[0, 0.01, D * 0.24]} receiveShadow material={mat.fascia}>
-          <boxGeometry args={[W * 0.9, SLAB_T * 0.7, D * 0.24]} />
-        </mesh>
-        {/* Jardineras — la vegetación que desborda en los renders */}
+        <mesh
+          position={[0, SLAB_T / 2, PLATE_Z]}
+          receiveShadow
+          geometry={geo.floorPlate}
+          material={mat.fascia}
+        />
+        <mesh
+          position={[0, SLAB_T / 2, BALC_Z]}
+          castShadow
+          receiveShadow
+          geometry={geo.balcony}
+          material={mat.fascia}
+        />
         {!lite &&
-          [-0.28, 0.02, 0.3].map((f) => (
+          [-0.2, 0.16].map((f) => (
             <mesh
               key={f}
-              position={[f * W, 0.075, D * 0.3]}
+              position={[f * W, 0.055, RAIL_Z - 0.08]}
               castShadow
               material={mat.green}
             >
-              <boxGeometry args={[W * 0.24, 0.11, 0.13]} />
+              <boxGeometry args={[W * 0.2, 0.08, 0.12]} />
             </mesh>
           ))}
       </group>
 
-      {/* Parapeto / sala de máquinas — remate macizo escalonado */}
       <mesh
         ref={parapetRef}
-        position={[-W * 0.1, GROUND_H + towerH + FLOOR_H + 0.16, -D * 0.2]}
+        position={[-W * 0.1, GROUND_H + towerH + FLOOR_H + 0.1, BACK_Z + 0.28]}
         castShadow
         receiveShadow
         material={mat.stucco}
       >
-        <boxGeometry args={[W * 0.55, 0.32, D * 0.34]} />
+        <boxGeometry args={[W * 0.36, 0.2, 0.28]} />
       </mesh>
     </group>
   );

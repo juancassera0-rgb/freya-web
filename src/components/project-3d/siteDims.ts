@@ -11,8 +11,15 @@ export const SITE_DIMS = {
   D: 2.45,
   FLOOR_H: 0.4,
   GROUND_H: 0.62,
-  CANTILEVER: 0.3,
+  /** Voladizo a CALLE únicamente — ~1.1 m. Nunca atraviesa medianera. */
+  CANTILEVER: 0.38,
   SLAB_T: 0.052,
+  /** Espesor de medianera / contrafrente. */
+  WALL: 0.07,
+  /** Plano de vidrio a calle. */
+  FRONT_Z: 0.28,
+  /** Plano ciego de contrafrente — el prisma cierra acá. */
+  BACK_Z: -0.95,
 } as const;
 
 export function towerTotalH(floors: number): number {

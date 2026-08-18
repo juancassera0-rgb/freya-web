@@ -12,9 +12,10 @@ type Props = {
   detail: "low" | "medium" | "high";
 };
 
-const { D, W } = SITE_DIMS;
+const { W, CANTILEVER, FRONT_Z, BACK_Z } = SITE_DIMS;
 
-const FRONT = D / 2;
+/** Vereda arranca justo después del voladizo — el lote no flota en el vacío. */
+const FRONT = FRONT_Z + CANTILEVER + 0.06;
 const SIDEWALK_D = 1.45;
 const CURB_Z = FRONT + SIDEWALK_D;
 const CURB_H = 0.055;
@@ -147,14 +148,24 @@ export function SiteContext({ mood, detail }: Props) {
         </Instances>
       )}
 
-      {/* Fondo de lote — patio estrecho, no césped suburbano de 30×6 */}
+      {/* Solado del lote — une contrafrente, medianeras y vereda */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.001, -D / 2 - 1.1]}
+        position={[0, -0.001, (BACK_Z + FRONT) / 2]}
         receiveShadow={!low}
         material={mats.patio}
       >
-        <planeGeometry args={[W * 2.4, 2.2]} />
+        <planeGeometry args={[W + 0.22, FRONT - BACK_Z + 0.12]} />
+      </mesh>
+
+      {/* Fondo de lote — patio estrecho, no césped suburbano de 30×6 */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.001, BACK_Z - 0.85]}
+        receiveShadow={!low}
+        material={mats.patio}
+      >
+        <planeGeometry args={[W * 2.2, 1.5]} />
       </mesh>
 
       {trees.map(([x], i) => (

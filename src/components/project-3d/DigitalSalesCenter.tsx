@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   buildUnitPlan,
   roomsWithRenders,
@@ -109,6 +109,20 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
   }, []);
 
   useSceneTouch(stageRef, { interactive, onPinch: handlePinch });
+
+  /* Desktop: el wheel sobre el viewport es de la cámara, no de la página.
+     Listener no pasivo + data-lenis-prevent-wheel (en el markup). En táctil
+     no se registra: el pinch lo cubre useSceneTouch y un dedo scrollea. */
+  useEffect(() => {
+    if (touch) return;
+    const el = stageRef.current;
+    if (!el) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [touch]);
 
   /* Altura fija sólo en táctil: en desktop no hay barra que aparezca. */
   const stageHeight = useStableStageSize(stageRef, { enabled: touch });
@@ -412,6 +426,7 @@ export function DigitalSalesCenter({ config, projectName }: Props) {
           className={styles.stage}
           data-cursor={lite ? undefined : "Explorar"}
           data-engaged={interactive ? "true" : "false"}
+          data-lenis-prevent-wheel={!touch ? true : undefined}
           /* Altura fija en táctil — ver useStableStageSize */
           style={stageHeight ? { height: stageHeight } : undefined}
         >

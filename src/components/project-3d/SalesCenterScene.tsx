@@ -12,6 +12,7 @@ import { SiteContext } from "./SiteContext";
 import { NeighbourContext } from "./NeighbourContext";
 import { ProceduralEnvironment } from "./ProceduralEnvironment";
 import { BRAND, MOOD, SITE } from "./sceneTokens";
+import { OrbitWheelCapture } from "./OrbitWheelCapture";
 import { getConcreteFloorMap, getConcreteFloorNormalMap } from "./proceduralTextures";
 
 export type SalesStage = "building" | "floor" | "unit";
@@ -73,9 +74,9 @@ const SETTLE_EPS = 0.0025;
 
 /** Límites de distancia por etapa — el pinch los respeta */
 const DOLLY_RANGE: Record<SalesStage, [number, number]> = {
-  building: [3.4, 13],
-  floor: [2.8, 11],
-  unit: [2.6, 8],
+  building: [4.2, 12],
+  floor: [3.4, 10],
+  unit: [2.8, 8],
 };
 
 type OrbitHandle = React.ComponentRef<typeof OrbitControls> | null;
@@ -427,7 +428,7 @@ export function SalesCenterScene({
         enableDamping
         dampingFactor={touch ? 0.085 : 0.065}
         rotateSpeed={touch ? 0.36 : 0.4}
-        zoomSpeed={0.48}
+        zoomSpeed={0.42}
         enableZoom={!touch}
         touches={{
           ONE: THREE.TOUCH.ROTATE,
@@ -442,6 +443,7 @@ export function SalesCenterScene({
         maxPolarAngle={Math.PI * (isUnit ? 0.42 : 0.49)}
       />
 
+      <OrbitWheelCapture enabled={!touch && interactive} />
       <ControlsGate orbitRef={orbitRef} interactive={interactive} />
       <PinchDolly handleRef={handleRef} range={range} />
 

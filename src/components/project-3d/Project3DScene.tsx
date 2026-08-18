@@ -161,8 +161,7 @@ export function Project3DScene({
 
       {/* Emplazamiento: vereda, cordón, calzada, tipas laterales */}
       <SiteContext mood={sceneMood} detail={tier} />
-      {/* Medianeras ciegas — contexto Beauchef, sin ciudad procedural */}
-      <NeighbourContext detail={tier} floors={config.schematicFloors} />
+      <NeighbourContext detail={tier} />
 
       {!low && (
         <ContactShadows

@@ -36,7 +36,7 @@ export function OrbitControlsSoft({
         ONE: THREE.TOUCH.ROTATE,
         TWO: (touch ? -1 : THREE.TOUCH.DOLLY_ROTATE) as THREE.TOUCH,
       }}
-      minDistance={3.2}
+      minDistance={4.4}
       maxDistance={11}
       minPolarAngle={Math.PI * 0.22}
       maxPolarAngle={Math.PI * 0.48}
