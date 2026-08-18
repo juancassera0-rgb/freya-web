@@ -492,6 +492,8 @@ export function ArchitecturalMassing({
           ? BALC_START + (BALC_D * balcScaleZ) / 2
           : BALC_Z;
         const railZ = setback ? BALC_START + BALC_D * balcScaleZ - 0.014 : RAIL_Z;
+        /** Vidrio y paño ciego a ~mitad de la profundidad actual del balcón. */
+        const facadeZ = BALC_START + (BALC_D * balcScaleZ) * 0.5;
 
         return (
           <group
@@ -546,7 +548,7 @@ export function ArchitecturalMassing({
 
             <mesh
               geometry={geo.aptWall}
-              position={[aptWallX, glassY, FRONT_Z + APT_WALL_D / 2]}
+              position={[aptWallX, glassY, facadeZ + APT_WALL_D / 2]}
               castShadow={!lite}
               receiveShadow
               material={mat.stucco}
@@ -556,7 +558,7 @@ export function ArchitecturalMassing({
               <mesh
                 key={`g-${x}`}
                 geometry={geo.glassBay}
-                position={[x, glassY, FRONT_Z + 0.003]}
+                position={[x, glassY, facadeZ + 0.003]}
                 material={glassMat}
               />
             ))}
@@ -565,7 +567,7 @@ export function ArchitecturalMassing({
                 <mesh
                   key={`m-${x}`}
                   geometry={geo.mullion}
-                  position={[x, glassY, FRONT_Z + 0.01]}
+                  position={[x, glassY, facadeZ + 0.01]}
                   material={mat.mullion}
                 />
               ))}
