@@ -348,7 +348,6 @@ export function ArchitecturalMassing({
       phLeftSide: new THREE.BoxGeometry(WALL, PH_ROOM_H, PH_LEFT_SIDE_D),
       phRightSide: new THREE.BoxGeometry(WALL * 1.15, PH_ROOM_H, PH_RIGHT_SIDE_D),
       phRoofDeck: new THREE.BoxGeometry(INNER_W, SLAB_T, PH_ROOF_D),
-      phRoofParapet: new THREE.BoxGeometry(INNER_W * 0.94, PH_PARAPET_H, 0.04),
       phRoofRail: new THREE.BoxGeometry(INNER_W * 0.92, RAIL_H * 0.9, 0.006),
       phPlanter: new THREE.BoxGeometry(0.3, 0.046, 0.1),
       phShrub: new THREE.BoxGeometry(0.13, 0.11, 0.09),
@@ -362,8 +361,10 @@ export function ArchitecturalMassing({
   const floorY = (level: number, ex: number) =>
     GROUND_H + (level - 1) * FLOOR_H + ex * 0.3 * (level - 1);
 
-  const towerH = towerFloors * FLOOR_H;
-  const stackH = GROUND_H + towerH;
+  /** Hasta el piso 8: el 9 es terraza abierta, sin medianeras que tapen el panorama. */
+  const bodyFloors = Math.max(1, towerFloors - 1);
+  const bodyH = GROUND_H + bodyFloors * FLOOR_H;
+  const bodyY = bodyH / 2;
 
   /* ---------- Animación interna: sin setState por frame ---------- */
   useFrame((state, delta) => {
@@ -393,7 +394,6 @@ export function ArchitecturalMassing({
     }
   });
 
-  const stackY = stackH / 2;
   const lobbyX = -INNER_W / 2 + LOBBY_W / 2;
   const garageX = INNER_W / 2 - GARAGE_W / 2;
   const glassStart = -INNER_W / 2 + SOLID_W;
@@ -414,47 +414,46 @@ export function ArchitecturalMassing({
     <group ref={group}>
       <mesh
         geometry={geo.rear}
-        position={[0, stackY, BACK_Z + WALL / 2]}
-        scale={[1, stackH, 1]}
+        position={[0, bodyY, BACK_Z + WALL / 2]}
+        scale={[1, bodyH, 1]}
         castShadow
         receiveShadow
         material={mat.stucco}
       />
-      {/* Medianeras y contrafrente: hasta el último piso.
-          Las 3 paredes del ático (izq. escalonada, fondo, der. alta)
-          viven en el grupo del piso 9. */}
+      {/* Medianeras y contrafrente hasta el piso 8.
+          El 9 queda abierto: solo losa y baranda de vidrio. */}
       <mesh
         geometry={geo.side}
-        position={[-W / 2 + WALL / 2, stackY, SIDE_Z]}
-        scale={[1, stackH, 1]}
+        position={[-W / 2 + WALL / 2, bodyY, SIDE_Z]}
+        scale={[1, bodyH, 1]}
         castShadow
         receiveShadow
         material={mat.stucco}
       />
       <mesh
         geometry={geo.side}
-        position={[W / 2 - WALL / 2, stackY, SIDE_Z]}
-        scale={[1, stackH, 1]}
+        position={[W / 2 - WALL / 2, bodyY, SIDE_Z]}
+        scale={[1, bodyH, 1]}
         castShadow
         receiveShadow
         material={mat.stucco}
       />
       <mesh
         geometry={geo.interiorRear}
-        position={[0, stackY, BACK_Z + WALL + 0.012]}
-        scale={[1, stackH - SLAB_T * 2, 1]}
+        position={[0, bodyY, BACK_Z + WALL + 0.012]}
+        scale={[1, bodyH - SLAB_T * 2, 1]}
         material={mat.interior}
       />
       <mesh
         geometry={geo.interiorSide}
-        position={[-W / 2 + WALL + FIT, stackY, SIDE_Z]}
-        scale={[1, stackH - SLAB_T * 2, 1]}
+        position={[-W / 2 + WALL + FIT, bodyY, SIDE_Z]}
+        scale={[1, bodyH - SLAB_T * 2, 1]}
         material={mat.interior}
       />
       <mesh
         geometry={geo.interiorSide}
-        position={[W / 2 - WALL - FIT, stackY, SIDE_Z]}
-        scale={[1, stackH - SLAB_T * 2, 1]}
+        position={[W / 2 - WALL - FIT, bodyY, SIDE_Z]}
+        scale={[1, bodyH - SLAB_T * 2, 1]}
         material={mat.interior}
       />
       <mesh
@@ -831,21 +830,10 @@ export function ArchitecturalMassing({
             {roofTerrace && (
               <>
                 <mesh
-                  geometry={geo.phRoofParapet}
-                  position={[
-                    0,
-                    SLAB_T / 2 + PH_PARAPET_H / 2,
-                    PH_GLASS_Z,
-                  ]}
-                  castShadow={!lite}
-                  receiveShadow
-                  material={mat.stucco}
-                />
-                <mesh
                   geometry={geo.phRoofRail}
                   position={[
                     0,
-                    SLAB_T / 2 + PH_PARAPET_H + RAIL_H * 0.38,
+                    SLAB_T / 2 + RAIL_H * 0.45,
                     PH_GLASS_Z + 0.008,
                   ]}
                   material={railMat}
