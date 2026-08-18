@@ -85,6 +85,20 @@ const GLASS_OPEN_H = OPENING_H - BAND_H;
 /** El paño ciego vuela un poco más que el plano de vidrio. */
 const APT_WALL_D = 0.07;
 const BAND_D = 0.048;
+/**
+ * Ático: la fachada se recede y la terraza ocupa ese vacío.
+ * No es un piso tipo con el balcón acortado.
+ */
+const PH_BALC_SCALE = 0.7;
+const PH_GLASS_Z = FRONT_Z - 0.1;
+const PH_LEFT_W = INNER_W * 0.24;
+const PH_GLASS_W = INNER_W - PH_LEFT_W - 0.08;
+const PH_GLASS_H = OPENING_H * 0.52;
+const PH_PARAPET_H = 0.058;
+const PH_LEFT_D = 0.42;
+const PH_LEFT_H = FLOOR_H * 2.02;
+const PH_CANOPY_D = 0.44;
+const PH_CANOPY_T = 0.05;
 
 const COL = {
   stucco: SITE.stucco,
@@ -120,8 +134,6 @@ export function ArchitecturalMassing({
 }: Props) {
   const group = useRef<THREE.Group>(null);
   const slabRefs = useRef<Map<number, THREE.Group>>(new Map());
-  const crownRef = useRef<THREE.Group>(null);
-  const parapetRef = useRef<THREE.Mesh>(null);
   const extractNow = useRef(0);
   const explodeNow = useRef(explode);
 
@@ -223,6 +235,8 @@ export function ArchitecturalMassing({
       }),
       ground: concrete(COL.ground, 0.86),
       green: make(COL.green, 1),
+      foliageSun: make(SITE.foliageSun, 1),
+      foliageMid: make(SITE.foliageMid, 1),
 
       interior: make(COL.interior, 0.97, { envMapIntensity: 0.05 }),
       interiorLit: make(COL.interiorLit, 0.92, { envMapIntensity: 0.12 }),
@@ -230,6 +244,21 @@ export function ArchitecturalMassing({
       glassBase: glass(COL.glass, 0.38, 0.06),
       glassEmph: glass(COL.glassLit, 0.5, 0.04),
       glassDim: glass(COL.glass, 0.14, 0.06),
+      glassPent: new THREE.MeshPhysicalMaterial({
+        color: COL.glass,
+        roughness: 0.05,
+        metalness: 0.48,
+        envMapIntensity: 3.4,
+        transparent: true,
+        opacity: 0.84,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        ior: 1.52,
+        specularIntensity: 1.2,
+        thickness: 0.28,
+        attenuationColor: COL.glass,
+        attenuationDistance: 0.32,
+      }),
 
       slabBase: concrete(COL.soffit, 0.86, {
         polygonOffset: true,
@@ -305,10 +334,19 @@ export function ArchitecturalMassing({
       lobbyGlass: new THREE.BoxGeometry(LOBBY_W - 0.02, GROUND_H * 0.86, 0.01),
       slat: new THREE.BoxGeometry(0.013, GROUND_H * 0.86, 0.02),
       spot: new THREE.CylinderGeometry(0.016, 0.016, 0.006, 10),
-      planter: new THREE.BoxGeometry(BALC_W * 0.72, 0.07, 0.14),
-      bulkhead: new THREE.BoxGeometry(INNER_W * 0.9, FLOOR_H * 0.72, CORE_D * 0.42),
-      ribbon: new THREE.BoxGeometry(INNER_W * 0.55, FLOOR_H * 0.16, 0.012),
-      punch: new THREE.BoxGeometry(0.11, 0.11, 0.04),
+      phGlass: new THREE.BoxGeometry(PH_GLASS_W, PH_GLASS_H, 0.014),
+      phGlassVoid: new THREE.BoxGeometry(PH_GLASS_W - 0.02, PH_GLASS_H - 0.01, 0.04),
+      phLintel: new THREE.BoxGeometry(PH_GLASS_W + 0.06, 0.078, 0.12),
+      phParapet: new THREE.BoxGeometry(BALC_W * 0.985, PH_PARAPET_H, 0.024),
+      phRail: new THREE.BoxGeometry(BALC_W * 0.97, RAIL_H * 1.05, 0.006),
+      phCanopy: new THREE.BoxGeometry(PH_GLASS_W + 0.08, PH_CANOPY_T, PH_CANOPY_D),
+      phLeftTower: new THREE.BoxGeometry(PH_LEFT_W, PH_LEFT_H, PH_LEFT_D),
+      phRightJamb: new THREE.BoxGeometry(0.07, OPENING_H * 0.88, 0.3),
+      phRightFin: new THREE.BoxGeometry(WALL * 1.25, FLOOR_H * 1.35, 0.36),
+      phRightStep: new THREE.BoxGeometry(WALL * 1.4, FLOOR_H * 0.72, 0.28),
+      phRearMass: new THREE.BoxGeometry(INNER_W * 0.42, FLOOR_H * 0.55, 0.34),
+      phPlanter: new THREE.BoxGeometry(0.3, 0.046, 0.1),
+      phShrub: new THREE.BoxGeometry(0.13, 0.11, 0.09),
     };
   }, []);
 
@@ -340,14 +378,6 @@ export function ArchitecturalMassing({
       node.position.z = e * 1.05;
       node.position.y = floorY(level, ex) + e * 0.2;
     });
-
-    if (crownRef.current) {
-      crownRef.current.position.y = GROUND_H + towerH + ex * 0.3 * towerFloors;
-    }
-    if (parapetRef.current) {
-      parapetRef.current.position.y =
-        GROUND_H + towerH + FLOOR_H + 0.16 + ex * 0.3 * towerFloors;
-    }
 
     if (group.current) {
       const target =
@@ -492,13 +522,29 @@ export function ArchitecturalMassing({
         const wallY = SLAB_T / 2 + OPENING_H / 2;
         const glassY = SLAB_T / 2 + GLASS_OPEN_H / 2;
         const bandY = SLAB_T / 2 + GLASS_OPEN_H + BAND_H / 2;
-        const balcScaleZ = setback ? 0.42 : 1;
+        const balcScaleZ = setback ? PH_BALC_SCALE : 1;
         const balcZ = setback
           ? BALC_START + (BALC_D * balcScaleZ) / 2
           : BALC_Z;
-        const railZ = setback ? BALC_START + BALC_D * balcScaleZ - 0.014 : RAIL_Z;
+        const railZ = setback
+          ? BALC_START + BALC_D * balcScaleZ - 0.014
+          : RAIL_Z;
         /** Vidrio y paño ciego a ~mitad de la profundidad actual del balcón. */
-        const facadeZ = BALC_START + (BALC_D * balcScaleZ) * 0.5;
+        const facadeZ = setback
+          ? PH_GLASS_Z
+          : BALC_START + BALC_D * 0.5;
+        const pentGlassMat = dimmed
+          ? mat.glassDim
+          : emphasised
+            ? mat.glassEmph
+            : mat.glassPent;
+        const pentGlassX = -INNER_W / 2 + PH_LEFT_W + PH_GLASS_W / 2;
+        const pentLeftX = -INNER_W / 2 + PH_LEFT_W / 2;
+        const pentGlassY = SLAB_T / 2 + 0.018 + PH_GLASS_H / 2;
+        const pentCanopyY =
+          SLAB_T / 2 + 0.018 + PH_GLASS_H + PH_CANOPY_T / 2;
+        const pentCanopyZ = PH_GLASS_Z + PH_CANOPY_D / 2 - 0.03;
+        const typicalSoffitZ = (BALC_START + BALC_D * 0.5 + RAIL_Z) / 2;
 
         return (
           <group
@@ -544,176 +590,295 @@ export function ArchitecturalMassing({
               receiveShadow
               material={slabMat}
             />
-            <mesh
-              geometry={geo.fasciaStrip}
-              position={[0, 0, railZ]}
-              scale={[1, 1, setback ? 0.8 : 1]}
-              material={mat.fasciaDark}
-            />
 
-            <mesh
-              geometry={geo.aptWall}
-              position={[aptWallX, wallY, facadeZ + APT_WALL_D / 2]}
-              castShadow={!lite}
-              receiveShadow
-              material={mat.stucco}
-            />
-            <mesh
-              geometry={geo.upperBand}
-              position={[
-                glassStart + GLASS_W / 2,
-                bandY,
-                facadeZ + BAND_D / 2,
-              ]}
-              castShadow={!lite}
-              receiveShadow
-              material={mat.stucco}
-            />
-
-            {bayXs.map((x) => (
-              <mesh
-                key={`g-${x}`}
-                geometry={geo.glassBay}
-                position={[x, glassY, facadeZ + 0.003]}
-                material={glassMat}
-              />
-            ))}
-            {!lite &&
-              mullionXs.map((x) => (
+            {!setback && (
+              <>
                 <mesh
-                  key={`m-${x}`}
-                  geometry={geo.mullion}
-                  position={[x, glassY, facadeZ + 0.01]}
-                  material={mat.mullion}
+                  geometry={geo.fasciaStrip}
+                  position={[0, 0, railZ]}
+                  material={mat.fasciaDark}
                 />
-              ))}
+                <mesh
+                  geometry={geo.aptWall}
+                  position={[aptWallX, wallY, facadeZ + APT_WALL_D / 2]}
+                  castShadow={!lite}
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.upperBand}
+                  position={[
+                    glassStart + GLASS_W / 2,
+                    bandY,
+                    facadeZ + BAND_D / 2,
+                  ]}
+                  castShadow={!lite}
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                {bayXs.map((x) => (
+                  <mesh
+                    key={`g-${x}`}
+                    geometry={geo.glassBay}
+                    position={[x, glassY, facadeZ + 0.003]}
+                    material={glassMat}
+                  />
+                ))}
+                {!lite &&
+                  mullionXs.map((x) => (
+                    <mesh
+                      key={`m-${x}`}
+                      geometry={geo.mullion}
+                      position={[x, glassY, facadeZ + 0.01]}
+                      material={mat.mullion}
+                    />
+                  ))}
+                <mesh
+                  geometry={geo.kick}
+                  position={[0, SLAB_T / 2 + 0.006, railZ]}
+                  material={mat.fasciaDark}
+                />
+                <mesh
+                  geometry={geo.rail}
+                  position={[0, RAIL_H / 2 + SLAB_T / 2 + 0.01, railZ]}
+                  material={railMat}
+                />
+                <mesh
+                  geometry={geo.kick}
+                  position={[0, RAIL_H + SLAB_T / 2 + 0.014, railZ]}
+                  material={mat.railCap}
+                  scale={[1, 0.55, 0.7]}
+                />
+                {[-1, 1].map((side) => (
+                  <group key={`side-rail-${side}`}>
+                    <mesh
+                      geometry={geo.sideKick}
+                      position={[
+                        side * RAIL_SIDE_X,
+                        SLAB_T / 2 + 0.006,
+                        SIDE_RAIL_Z,
+                      ]}
+                      material={mat.fasciaDark}
+                    />
+                    <mesh
+                      geometry={geo.sideRail}
+                      position={[
+                        side * RAIL_SIDE_X,
+                        RAIL_H / 2 + SLAB_T / 2 + 0.01,
+                        SIDE_RAIL_Z,
+                      ]}
+                      material={railMat}
+                    />
+                    <mesh
+                      geometry={geo.sideKick}
+                      position={[
+                        side * RAIL_SIDE_X,
+                        RAIL_H + SLAB_T / 2 + 0.014,
+                        SIDE_RAIL_Z,
+                      ]}
+                      material={mat.railCap}
+                      scale={[0.7, 0.55, 1]}
+                    />
+                  </group>
+                ))}
+              </>
+            )}
+
             {bayXs.map((x) => (
               <mesh
                 key={`rg-${x}`}
                 geometry={geo.rearGlass}
                 position={[x, glassY, BACK_Z - 0.006]}
-                material={glassMat}
+                material={setback ? pentGlassMat : glassMat}
               />
             ))}
 
-            <mesh
-              geometry={geo.kick}
-              position={[0, SLAB_T / 2 + 0.006, railZ]}
-              material={mat.fasciaDark}
-            />
-            <mesh
-              geometry={geo.rail}
-              position={[0, RAIL_H / 2 + SLAB_T / 2 + 0.01, railZ]}
-              material={railMat}
-            />
-            <mesh
-              geometry={geo.kick}
-              position={[0, RAIL_H + SLAB_T / 2 + 0.014, railZ]}
-              material={mat.railCap}
-              scale={[1, 0.55, 0.7]}
-            />
-            {!setback &&
-              [-1, 1].map((side) => (
-                <group key={`side-rail-${side}`}>
-                  <mesh
-                    geometry={geo.sideKick}
-                    position={[
-                      side * RAIL_SIDE_X,
-                      SLAB_T / 2 + 0.006,
-                      SIDE_RAIL_Z,
-                    ]}
-                    material={mat.fasciaDark}
-                  />
-                  <mesh
-                    geometry={geo.sideRail}
-                    position={[
-                      side * RAIL_SIDE_X,
-                      RAIL_H / 2 + SLAB_T / 2 + 0.01,
-                      SIDE_RAIL_Z,
-                    ]}
-                    material={railMat}
-                  />
-                  <mesh
-                    geometry={geo.sideKick}
-                    position={[
-                      side * RAIL_SIDE_X,
-                      RAIL_H + SLAB_T / 2 + 0.014,
-                      SIDE_RAIL_Z,
-                    ]}
-                    material={mat.railCap}
-                    scale={[0.7, 0.55, 1]}
-                  />
-                </group>
-              ))}
+            {setback && (
+              <>
+                <mesh
+                  geometry={geo.phParapet}
+                  position={[
+                    0,
+                    SLAB_T / 2 + PH_PARAPET_H / 2,
+                    railZ,
+                  ]}
+                  castShadow={!lite}
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phRail}
+                  position={[
+                    0,
+                    SLAB_T / 2 + PH_PARAPET_H + RAIL_H * 0.41,
+                    railZ + 0.004,
+                  ]}
+                  material={railMat}
+                />
+                <mesh
+                  geometry={geo.phLeftTower}
+                  position={[
+                    pentLeftX,
+                    PH_LEFT_H / 2,
+                    PH_GLASS_Z + 0.05 - PH_LEFT_D / 2,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phGlassVoid}
+                  position={[pentGlassX, pentGlassY, PH_GLASS_Z - 0.03]}
+                  material={mat.interior}
+                />
+                <mesh
+                  geometry={geo.phGlass}
+                  position={[pentGlassX, pentGlassY, PH_GLASS_Z]}
+                  material={pentGlassMat}
+                />
+                <mesh
+                  geometry={geo.phRightJamb}
+                  position={[
+                    INNER_W / 2 - 0.03,
+                    SLAB_T / 2 + OPENING_H * 0.46,
+                    PH_GLASS_Z + 0.1,
+                  ]}
+                  castShadow={!lite}
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phLintel}
+                  position={[pentGlassX, pentCanopyY + 0.008, PH_GLASS_Z + 0.06]}
+                  castShadow={!lite}
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phCanopy}
+                  position={[pentGlassX, pentCanopyY, pentCanopyZ]}
+                  castShadow={!lite}
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phRightFin}
+                  position={[
+                    W / 2 - WALL / 2,
+                    FLOOR_H + FLOOR_H * 0.68,
+                    SIDE_FRONT - 0.14,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phRightStep}
+                  position={[
+                    W / 2 - WALL / 2,
+                    FLOOR_H + FLOOR_H * 0.32,
+                    CORE_Z + 0.1,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                <mesh
+                  geometry={geo.phRearMass}
+                  position={[
+                    -INNER_W * 0.02,
+                    FLOOR_H + FLOOR_H * 0.28,
+                    CORE_Z - 0.16,
+                  ]}
+                  castShadow
+                  receiveShadow
+                  material={mat.stucco}
+                />
+                {!lite &&
+                  [-PH_GLASS_W * 0.28, 0, PH_GLASS_W * 0.28].map((x) => (
+                    <mesh
+                      key={`ph-spot-${x}`}
+                      geometry={geo.spot}
+                      position={[
+                        pentGlassX + x,
+                        pentCanopyY - PH_CANOPY_T / 2 - 0.004,
+                        pentCanopyZ + 0.04,
+                      ]}
+                      material={mat.spot}
+                    />
+                  ))}
+                {!lite && (
+                  <>
+                    <mesh
+                      geometry={geo.phPlanter}
+                      position={[
+                        -BALC_W * 0.28,
+                        SLAB_T / 2 + PH_PARAPET_H + 0.024,
+                        railZ - 0.09,
+                      ]}
+                      material={mat.stucco}
+                    />
+                    <mesh
+                      geometry={geo.phShrub}
+                      position={[
+                        -BALC_W * 0.32,
+                        SLAB_T / 2 + PH_PARAPET_H + 0.1,
+                        railZ - 0.08,
+                      ]}
+                      material={mat.foliageSun}
+                      castShadow
+                    />
+                    <mesh
+                      geometry={geo.phShrub}
+                      position={[
+                        -BALC_W * 0.2,
+                        SLAB_T / 2 + PH_PARAPET_H + 0.08,
+                        railZ - 0.09,
+                      ]}
+                      scale={[0.9, 0.75, 0.85]}
+                      material={mat.foliageMid}
+                    />
+                    <mesh
+                      geometry={geo.phShrub}
+                      position={[
+                        -BALC_W * 0.38,
+                        SLAB_T / 2 + PH_PARAPET_H + 0.055,
+                        railZ + 0.012,
+                      ]}
+                      scale={[0.72, 0.5, 0.58]}
+                      material={mat.foliageSun}
+                    />
+                    <mesh
+                      geometry={geo.phShrub}
+                      position={[
+                        -BALC_W * 0.12,
+                        SLAB_T / 2 + PH_PARAPET_H + 0.07,
+                        railZ - 0.07,
+                      ]}
+                      scale={[0.65, 0.55, 0.7]}
+                      material={mat.green}
+                    />
+                  </>
+                )}
+              </>
+            )}
 
             {!lite &&
               spotXs.map((x) => (
                 <mesh
                   key={`spot-${x}`}
                   geometry={geo.spot}
-                  position={[x, -SLAB_T / 2 - 0.004, (facadeZ + railZ) / 2]}
+                  position={[
+                    x,
+                    -SLAB_T / 2 - 0.004,
+                    setback ? typicalSoffitZ : (facadeZ + railZ) / 2,
+                  ]}
                   material={mat.spot}
                 />
               ))}
-
-            {setback && !lite && (
-              <mesh
-                geometry={geo.planter}
-                position={[0, 0.05, railZ - 0.06]}
-                material={mat.green}
-                castShadow
-              />
-            )}
           </group>
         );
       })}
-
-      <group ref={crownRef} position={[0, GROUND_H + towerH, 0]}>
-        <mesh
-          geometry={geo.bulkhead}
-          position={[0, FLOOR_H * 0.42, CORE_Z - 0.12]}
-          castShadow
-          receiveShadow
-          material={mat.stucco}
-        />
-        <mesh
-          geometry={geo.ribbon}
-          position={[0, FLOOR_H * 0.28, FRONT_Z - 0.18]}
-          material={mat.glassBase}
-        />
-        <mesh
-          geometry={geo.punch}
-          position={[-INNER_W * 0.32, FLOOR_H * 0.58, FRONT_Z - 0.16]}
-          material={mat.interior}
-        />
-        {/* Escalón de la medianera derecha hacia el fondo */}
-        <mesh
-          position={[W / 2 - WALL / 2, FLOOR_H * 0.28, SIDE_FRONT - 0.18]}
-          castShadow
-          receiveShadow
-          material={mat.stucco}
-        >
-          <boxGeometry args={[WALL, FLOOR_H * 0.55, 0.36]} />
-        </mesh>
-        <mesh
-          position={[W / 2 - WALL / 2, FLOOR_H * 0.16, CORE_Z]}
-          castShadow
-          receiveShadow
-          material={mat.stucco}
-        >
-          <boxGeometry args={[WALL, FLOOR_H * 0.32, CORE_D * 0.45]} />
-        </mesh>
-      </group>
-
-      <mesh
-        ref={parapetRef}
-        position={[-INNER_W * 0.18, GROUND_H + towerH + FLOOR_H * 0.78, CORE_Z - 0.22]}
-        castShadow
-        receiveShadow
-        material={mat.stucco}
-      >
-        <boxGeometry args={[INNER_W * 0.42, 0.16, 0.22]} />
-      </mesh>
     </group>
   );
 }
