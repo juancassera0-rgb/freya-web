@@ -62,12 +62,15 @@ const SIDE_Z = (BACK_Z + WALL + SIDE_FRONT) / 2;
 /** Losa a tope con la cara interior de las medianeras — sin hueco ni overflow. */
 const BALC_W = W - WALL * 2 - 0.008;
 /** Solo profundidad: la losa sobresale del frente de las medianeras. */
-const BALC_OVERHANG = 0.085;
+const BALC_OVERHANG = 0.13;
 const BALC_D = CANTILEVER + BALC_OVERHANG;
 const BALC_START = FRONT_Z;
 const BALC_Z = BALC_START + BALC_D / 2;
 const RAIL_Z = BALC_START + BALC_D - 0.014;
 const RAIL_H = 0.1;
+const SIDE_RAIL_D = BALC_OVERHANG - 0.018;
+const SIDE_RAIL_Z = SIDE_FRONT + 0.006 + SIDE_RAIL_D / 2;
+const RAIL_SIDE_X = BALC_W / 2 - 0.006;
 const PICK_Z = (BACK_Z + WALL + FIT + BALC_START + BALC_D) / 2;
 const LOBBY_W = INNER_W * 0.34;
 const GARAGE_W = INNER_W * 0.62;
@@ -292,6 +295,8 @@ export function ArchitecturalMassing({
       interiorSide: new THREE.BoxGeometry(0.018, 1, SIDE_D - FIT * 2),
       rail: new THREE.BoxGeometry(BALC_W - 0.05, RAIL_H, 0.007),
       kick: new THREE.BoxGeometry(BALC_W - 0.05, 0.01, 0.012),
+      sideRail: new THREE.BoxGeometry(0.007, RAIL_H, SIDE_RAIL_D),
+      sideKick: new THREE.BoxGeometry(0.012, 0.01, SIDE_RAIL_D),
       pick: new THREE.BoxGeometry(INNER_W, FLOOR_H * 0.95, PLATE_D + BALC_D),
       lobbyGlass: new THREE.BoxGeometry(LOBBY_W - 0.02, GROUND_H * 0.86, 0.01),
       slat: new THREE.BoxGeometry(0.013, GROUND_H * 0.86, 0.02),
@@ -589,6 +594,29 @@ export function ArchitecturalMassing({
               material={mat.railCap}
               scale={[1, 0.55, 0.7]}
             />
+            {!setback &&
+              [-1, 1].map((side) => (
+                <group key={`side-rail-${side}`}>
+                  <mesh
+                    geometry={geo.sideKick}
+                    position={[
+                      side * RAIL_SIDE_X,
+                      SLAB_T / 2 + 0.006,
+                      SIDE_RAIL_Z,
+                    ]}
+                    material={mat.fasciaDark}
+                  />
+                  <mesh
+                    geometry={geo.sideRail}
+                    position={[
+                      side * RAIL_SIDE_X,
+                      RAIL_H / 2 + SLAB_T / 2 + 0.01,
+                      SIDE_RAIL_Z,
+                    ]}
+                    material={railMat}
+                  />
+                </group>
+              ))}
 
             {!lite &&
               spotXs.map((x) => (
