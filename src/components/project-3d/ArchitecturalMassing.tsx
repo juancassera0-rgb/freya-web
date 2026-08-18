@@ -86,8 +86,8 @@ const GLASS_OPEN_H = OPENING_H - BAND_H;
 const APT_WALL_D = 0.07;
 const BAND_D = 0.048;
 /**
- * Piso 8: tres paredes + terraza al aire (sin techo).
- * Piso 9: terraza recedida sobre el techo de ese volumen.
+ * Pisos 1–8: balcón tipo.
+ * Piso 9: tres paredes + terraza al aire, sin techo.
  */
 const PH_BALC_SCALE = 0.75;
 const PH_GLASS_Z = FRONT_Z - 0.08;
@@ -97,12 +97,9 @@ const PH_GLASS_W = INNER_W - PH_LEFT_W - PH_RIGHT_W;
 const PH_GLASS_H = OPENING_H * 0.7;
 const PH_PARAPET_H = 0.058;
 const PH_ROOM_H = FLOOR_H - SLAB_T;
-/** Paredes laterales del 8, hacia la terraza — no hasta el borde. */
+/** Paredes laterales de la terraza del 9, hacia el frente — no hasta el borde. */
 const PH_LEFT_SIDE_D = 0.26;
 const PH_RIGHT_SIDE_D = 0.36;
-const PH_ROOF_Z0 = BACK_Z + WALL;
-const PH_ROOF_D = PH_GLASS_Z - PH_ROOF_Z0;
-const PH_ROOF_Z = (PH_GLASS_Z + PH_ROOF_Z0) / 2;
 
 const COL = {
   stucco: SITE.stucco,
@@ -347,8 +344,6 @@ export function ArchitecturalMassing({
       phMainRight: new THREE.BoxGeometry(PH_RIGHT_W, PH_ROOM_H, WALL),
       phLeftSide: new THREE.BoxGeometry(WALL, PH_ROOM_H, PH_LEFT_SIDE_D),
       phRightSide: new THREE.BoxGeometry(WALL * 1.15, PH_ROOM_H, PH_RIGHT_SIDE_D),
-      phRoofDeck: new THREE.BoxGeometry(INNER_W, SLAB_T, PH_ROOF_D),
-      phRoofRail: new THREE.BoxGeometry(INNER_W * 0.92, RAIL_H * 0.9, 0.006),
       phPlanter: new THREE.BoxGeometry(0.3, 0.046, 0.1),
       phShrub: new THREE.BoxGeometry(0.13, 0.11, 0.09),
     };
@@ -361,7 +356,7 @@ export function ArchitecturalMassing({
   const floorY = (level: number, ex: number) =>
     GROUND_H + (level - 1) * FLOOR_H + ex * 0.3 * (level - 1);
 
-  /** Hasta el piso 8: el 9 es terraza abierta, sin medianeras que tapen el panorama. */
+  /** Medianeras hasta el piso 8. El 9 es la terraza abierta. */
   const bodyFloors = Math.max(1, towerFloors - 1);
   const bodyH = GROUND_H + bodyFloors * FLOOR_H;
   const bodyY = bodyH / 2;
@@ -505,10 +500,8 @@ export function ArchitecturalMassing({
 
       {Array.from({ length: towerFloors }, (_, i) => {
         const level = i + 1;
-        const roofTerrace = level === towerFloors;
-        const terraceRoom =
-          towerFloors > 1 && level === towerFloors - 1;
-        const typical = !roofTerrace && !terraceRoom;
+        const terraceRoom = level === towerFloors;
+        const typical = !terraceRoom;
         const active = highlightedFloor === level;
         const isSelectedFloor = selectedUnit?.floor === level;
         const isHovered = hoveredFloor === level;
@@ -578,32 +571,20 @@ export function ArchitecturalMassing({
               />
             ) : null}
 
-            {!roofTerrace && (
-              <mesh
-                geometry={geo.floorPlate}
-                position={[0, 0, PLATE_Z]}
-                receiveShadow
-                material={slabMat}
-              />
-            )}
-            {(typical || terraceRoom) && (
-              <mesh
-                geometry={geo.balcony}
-                position={[0, 0, balcZ]}
-                scale={[1, 1, balcScaleZ]}
-                castShadow={!lite}
-                receiveShadow
-                material={slabMat}
-              />
-            )}
-            {roofTerrace && (
-              <mesh
-                geometry={geo.phRoofDeck}
-                position={[0, 0, PH_ROOF_Z]}
-                receiveShadow
-                material={slabMat}
-              />
-            )}
+            <mesh
+              geometry={geo.floorPlate}
+              position={[0, 0, PLATE_Z]}
+              receiveShadow
+              material={slabMat}
+            />
+            <mesh
+              geometry={geo.balcony}
+              position={[0, 0, balcZ]}
+              scale={[1, 1, balcScaleZ]}
+              castShadow={!lite}
+              receiveShadow
+              material={slabMat}
+            />
 
             {typical && (
               <>
@@ -698,8 +679,7 @@ export function ArchitecturalMassing({
               </>
             )}
 
-            {!roofTerrace &&
-              bayXs.map((x) => (
+            {bayXs.map((x) => (
               <mesh
                 key={`rg-${x}`}
                 geometry={geo.rearGlass}
@@ -827,55 +807,7 @@ export function ArchitecturalMassing({
               </>
             )}
 
-            {roofTerrace && (
-              <>
-                <mesh
-                  geometry={geo.phRoofRail}
-                  position={[
-                    0,
-                    SLAB_T / 2 + RAIL_H * 0.45,
-                    PH_GLASS_Z + 0.008,
-                  ]}
-                  material={railMat}
-                />
-                {!lite && (
-                  <>
-                    <mesh
-                      geometry={geo.phPlanter}
-                      position={[
-                        -INNER_W * 0.18,
-                        SLAB_T / 2 + PH_PARAPET_H + 0.028,
-                        PH_GLASS_Z - 0.06,
-                      ]}
-                      material={mat.stucco}
-                    />
-                    <mesh
-                      geometry={geo.phShrub}
-                      position={[
-                        -INNER_W * 0.22,
-                        SLAB_T / 2 + PH_PARAPET_H + 0.09,
-                        PH_GLASS_Z - 0.05,
-                      ]}
-                      material={mat.foliageSun}
-                      castShadow
-                    />
-                    <mesh
-                      geometry={geo.phShrub}
-                      position={[
-                        -INNER_W * 0.08,
-                        SLAB_T / 2 + PH_PARAPET_H + 0.07,
-                        PH_GLASS_Z - 0.06,
-                      ]}
-                      scale={[0.75, 0.55, 0.8]}
-                      material={mat.green}
-                    />
-                  </>
-                )}
-              </>
-            )}
-
             {!lite &&
-              !roofTerrace &&
               spotXs.map((x) => (
                 <mesh
                   key={`spot-${x}`}
