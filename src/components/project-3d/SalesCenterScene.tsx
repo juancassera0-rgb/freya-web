@@ -11,7 +11,6 @@ import { SkyDome } from "./SkyDome";
 import { SiteContext } from "./SiteContext";
 import { NeighbourContext } from "./NeighbourContext";
 import { ProceduralEnvironment } from "./ProceduralEnvironment";
-import { PostFX } from "./PostFX";
 import { BRAND, MOOD, SITE } from "./sceneTokens";
 import { getConcreteFloorMap, getConcreteFloorNormalMap } from "./proceduralTextures";
 
@@ -458,8 +457,6 @@ export function SalesCenterScene({
       <WebGLGuard onLost={onContextLost} />
 
       <Suspense fallback={null}>{children}</Suspense>
-
-      {high && !touch && <PostFX />}
     </Canvas>
   );
 }
