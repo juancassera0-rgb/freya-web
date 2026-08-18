@@ -165,25 +165,11 @@ export const sow3d: Project3DConfig = {
       body: "Acceso y recepción del edificio.",
     },
     {
-      id: "amenities",
-      label: "Amenities",
-      kind: "amenity",
-      position: [0.55, 1.34, 0.72],
-      body: "Espacios comunes del proyecto — detalle oficial pendiente.",
-    },
-    {
       id: "parking",
       label: "Cocheras",
       kind: "parking",
       position: [0.32, 0.35, 0.85],
       body: "Acceso a cocheras en planta baja / subsuelo (esquema).",
-    },
-    {
-      id: "rooftop",
-      label: "Último nivel",
-      kind: "rooftop",
-      position: [0, 4.35, 0.35],
-      body: "Nivel superior con unidad exclusiva y expansión.",
     },
   ],
   /**
